@@ -13,7 +13,7 @@
 
 void crash_me();
 
-/* What value should this be? one less 0 made it so I could only "allocate" */
+/* What value should this be? one less 0 made it so I could only "allocate" 978 bytes due to overwriting the kernel*/
 #define FREE_MEM_START 0x1000000
 
 uint32_t curr_free_mem = FREE_MEM_START;
@@ -26,6 +26,10 @@ print_header()
     /* Set to white background */
     terminal_setcolor(vga_entry_color(VGA_COLOR_BLACK, VGA_COLOR_WHITE));
     puts("ParOS");
+    /* 20 is the length of the memory usage string.
+     * This makes the top bar white and leaves enough room 
+     * for displaying memory used.
+     * TODO: Make tty driver better to avoid stuff like this */
     for (int i = 5; i < (VGA_WIDTH - 20 - get_int_len(mem_used)); i++) {
         puts(" ");
     }

@@ -153,3 +153,27 @@ move_cursor(int x, int y)
     terminal_column = x;
     update_cursor();
 }
+
+void
+move_cursor_up(int num)
+{
+    move_cursor(terminal_column, terminal_row -= num);
+}
+
+void
+move_cursor_down(int num)
+{
+    move_cursor(terminal_column, terminal_row += num);
+}
+
+void
+move_cursor_left(int num)
+{
+    move_cursor(terminal_column -= num, terminal_row);
+}
+
+void
+move_cursor_right(int num)
+{
+    move_cursor(terminal_column += num, terminal_row);
+}

@@ -5,8 +5,12 @@
 #include "../io/port_io.h"
 #include "tty.h"
 
+/* Change this to a bitfield or a single
+ * uint8_t and have flags */
 static uint8_t shift_pressed     = 0;
+static uint8_t ctrl_pressed      = 0;
 static uint8_t caps_lock_pressed = 0;
+static uint8_t esc_pressed       = 0;
 
 /* Taken from https://github.com/krisvers/kros/blob/master/kernel/arch/x86/drivers/keyboard.c */
 static char keycodes[128] = {
@@ -62,6 +66,9 @@ static char keycodes_shift[128] = {
  * Vim Mode
  * Buffer so backspace works correctly
  * Handle ALL keys correctly including shifts */
+
+/* Scan code list:
+ * https://www.scs.stanford.edu/10wi-cs140/pintos/specs/kbd/scancodes-1.html */
 void
 keyboard_handler(struct registers* regs)
 {
@@ -70,23 +77,56 @@ keyboard_handler(struct registers* regs)
     /* See if a key was released */
     if (scancode & 0x80) {
         switch(scancode) {
-            case 0xaa:
+            case 0x1d | 0x80: /* Right Control */
+                ctrl_pressed = 0;
+                break;
+            case 0x2a | 0x80: /* Left Shift */
+            case 0x36 | 0x80: /* Right Shift */
                 shift_pressed = 0;
+                break;
         }
+    /* See if a key was pressed */
     } else {
         switch (scancode) {
-            case 0x2a:
+            case 0x01: /* Escape */
+                esc_pressed = !esc_pressed;
+                break;
+            case 0x1d: /* Right Control */
+                ctrl_pressed = 1;
+                break;
+            case 0x2a: /* Left Shift */
+            case 0x36: /* Right Shift */
                 shift_pressed = 1;
                 break;
-            case 0x3a:
+            case 0x3a: /* Caps Lock */
                 caps_lock_pressed = !caps_lock_pressed;
                 break;
             default:
                 if (shift_pressed || caps_lock_pressed) {
                     putch(keycodes_shift[scancode]); 
-                } else {
+                } else if (ctrl_pressed) {
+                    /* Support ctrl keys for keybindings */
+                } else if (esc_pressed) { /* Vim mode baby */
+                    switch (keycodes[scancode]) {
+                        case 'j':
+                            move_cursor_down(1);
+                            break;
+                        case 'k':
+                            move_cursor_up(1);
+                            break;
+                        case 'h':
+                            move_cursor_left(1);
+                            break;
+                        case 'l':
+                            move_cursor_right(1);
+                            break;
+                        case 'i':
+                            esc_pressed = 0;
+                            break;
+                        /* FIX: What should default be? */
+                    }
+                } else
                     putch(keycodes[scancode]);
-                }
                 break;
         }
     }

@@ -16,5 +16,9 @@ void update_cursor(void);
 void delch(void);
 void delrow(void);
 void terminal_setcolor(uint8_t color);
+void move_cursor_up(int num);
+void move_cursor_down(int num);
+void move_cursor_left(int num);
+void move_cursor_right(int num);
 
 #endif
