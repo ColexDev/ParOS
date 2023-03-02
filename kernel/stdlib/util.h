@@ -9,5 +9,6 @@ void* memcpy(void *dest, const void *src, size_t len);
 void* kmalloc(size_t size);
 size_t strlen(const char* str);
 int get_int_len(int value);
+int kstrcmp(char s1[], char s2[]);
 
 #endif

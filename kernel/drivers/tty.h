@@ -4,8 +4,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-static const size_t VGA_WIDTH  = 80;
-static const size_t VGA_HEIGHT = 25;
+#define VGA_WIDTH  80
+#define VGA_HEIGHT 25
 
 void terminal_initialize(void);
 void putch(int c);
@@ -20,5 +20,7 @@ void move_cursor_up(int num);
 void move_cursor_down(int num);
 void move_cursor_left(int num);
 void move_cursor_right(int num);
+void print_header();
+void switch_tty(uint8_t tty);
 
 #endif

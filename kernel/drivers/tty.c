@@ -12,6 +12,79 @@ volatile uint16_t* terminal_buffer;
 
 static const uint16_t* VGA_MEMORY_START = (uint16_t*) 0xB8000;
 
+/* FIX: Just VGA_HEIGHT * VGA_WIDTH is NOT enough space,
+ * the 8 is a temp fix (probs too big) until I do the math */
+struct tty
+{
+    uint8_t buf[VGA_WIDTH * VGA_HEIGHT * 8];
+    uint8_t cursor_x;
+    uint8_t cursor_y;
+};
+
+static struct tty ttys[3] = {{.cursor_x = 0, .cursor_y = 1}, {.cursor_x = 0, .cursor_y = 1}, {.cursor_x = 0, .cursor_y = 1}};
+uint8_t current_tty = 1; /* NOT zero indexed */
+
+void
+switch_tty(uint8_t tty)
+{
+    /* Save current cursor position */
+    ttys[current_tty - 1].cursor_x = terminal_column;
+    ttys[current_tty - 1].cursor_y = terminal_row;
+
+    /* Flush video memory to current tty buffer */
+    memcpy(ttys[current_tty - 1].buf, VGA_MEMORY_START, VGA_WIDTH * VGA_HEIGHT * 8);
+
+    /* Clear video memory */
+    clear_screen();
+
+    /* Fill video memory with new tty buffer if its not empty.
+     * If the buffer is empty is will write zeros instead of an
+     * actual vga entry, this will cause the cursor to not 
+     * work correctly */
+    if (strlen((char*)ttys[tty - 1].buf) != 0)
+        memcpy((void*)VGA_MEMORY_START, ttys[tty - 1].buf, VGA_WIDTH * VGA_HEIGHT * 8);
+
+    current_tty = tty;
+    print_header();
+
+    /* Set new tty cursor position */
+    terminal_column = ttys[tty - 1].cursor_x;
+    terminal_row    = ttys[tty - 1].cursor_y;
+    update_cursor();
+}
+
+void
+print_header()
+{
+    move_cursor(0, 0);
+    // uint32_t mem_used = curr_free_mem - FREE_MEM_START;
+    /* Set to white background */
+    terminal_setcolor(vga_entry_color(VGA_COLOR_BLACK, VGA_COLOR_WHITE));
+    puts("ParOS");
+    if (current_tty == 1) {
+        puts(" [1] 2 3");
+    } else if (current_tty == 2) {
+        puts(" 1 [2] 3");
+    } else if (current_tty == 3) {
+        puts(" 1 2 [3]");
+    }
+    /* 20 is the length of the memory usage string.
+     * This makes the top bar white and leaves enough room 
+     * for displaying memory used.
+     * TODO: Make tty driver better to avoid stuff like this */
+    // for (int i = 5; i < (VGA_WIDTH - 20 - get_int_len(mem_used)); i++) {
+    for (int i = 13; i < (VGA_WIDTH); i++) {
+        puts(" ");
+    }
+    // puts("Memory Usage: ");
+    // puts(itoa(mem_used, 10));
+    // puts(" bytes");
+    // puts("\n\n");
+
+    /* Set back to default */
+    terminal_setcolor(vga_entry_color(VGA_COLOR_WHITE, VGA_COLOR_BLACK));
+}
+
 void
 terminal_initialize(void) 
 {
@@ -19,6 +92,9 @@ terminal_initialize(void)
     terminal_column = 0;
     terminal_color = vga_entry_color(VGA_COLOR_WHITE, VGA_COLOR_BLACK);
     terminal_buffer = (volatile uint16_t*) VGA_MEMORY_START;
+    /* Sets the hardware cursor to be a block instead of underscore*/
+    outb(0x3D4, 0xa);
+    outb(0x3D5, 0x0);
     clear_screen();
 }
 
@@ -149,8 +225,8 @@ update_cursor(void)
 void
 move_cursor(int x, int y)
 {
-    terminal_row = y;
     terminal_column = x;
+    terminal_row    = y;
     update_cursor();
 }
 

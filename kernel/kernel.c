@@ -19,30 +19,6 @@ void crash_me();
 uint32_t curr_free_mem = FREE_MEM_START;
 
 void
-print_header()
-{
-    move_cursor(0, 0);
-    uint32_t mem_used = curr_free_mem - FREE_MEM_START;
-    /* Set to white background */
-    terminal_setcolor(vga_entry_color(VGA_COLOR_BLACK, VGA_COLOR_WHITE));
-    puts("ParOS");
-    /* 20 is the length of the memory usage string.
-     * This makes the top bar white and leaves enough room 
-     * for displaying memory used.
-     * TODO: Make tty driver better to avoid stuff like this */
-    for (int i = 5; i < (VGA_WIDTH - 20 - get_int_len(mem_used)); i++) {
-        puts(" ");
-    }
-    puts("Memory Usage: ");
-    puts(itoa(mem_used, 10));
-    puts(" bytes");
-    puts("\n\n");
-
-    /* Set back to default */
-    terminal_setcolor(vga_entry_color(VGA_COLOR_WHITE, VGA_COLOR_BLACK));
-}
-
-void
 kernel_main(void) 
 {
     /* Initialize terminal interface */

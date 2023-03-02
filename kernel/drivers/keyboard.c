@@ -3,6 +3,7 @@
 #include "../interrupts/isr.h"
 #include "../interrupts/irq.h"
 #include "../io/port_io.h"
+#include "../stdlib/util.h"
 #include "tty.h"
 
 /* Change this to a bitfield or a single
@@ -11,6 +12,9 @@ static uint8_t shift_pressed     = 0;
 static uint8_t ctrl_pressed      = 0;
 static uint8_t caps_lock_pressed = 0;
 static uint8_t esc_pressed       = 0;
+static uint8_t alt_pressed       = 0;
+
+static uint8_t key_buffer[VGA_WIDTH];
 
 /* Taken from https://github.com/krisvers/kros/blob/master/kernel/arch/x86/drivers/keyboard.c */
 static char keycodes[128] = {
@@ -67,6 +71,56 @@ static char keycodes_shift[128] = {
  * Buffer so backspace works correctly
  * Handle ALL keys correctly including shifts */
 
+void
+handle_keypress(uint8_t scancode)
+{
+    if (shift_pressed || caps_lock_pressed) {
+        putch(keycodes_shift[scancode]); 
+        key_buffer[strlen((char*)key_buffer)] = keycodes_shift[scancode];
+    } else if (ctrl_pressed) {
+        /* Support ctrl keys for keybindings */
+    } else if (alt_pressed) {
+        switch(keycodes[scancode]) {
+            case '1':
+                switch_tty(1);
+                break;
+            case '2':
+                switch_tty(2);
+                break;
+            case '3':
+                switch_tty(3);
+                break;
+        }
+    } else if (esc_pressed) { /* Vim mode baby */
+        switch (keycodes[scancode]) {
+            case 'j':
+                move_cursor_down(1);
+                break;
+            case 'k':
+                move_cursor_up(1);
+                break;
+            case 'h':
+                move_cursor_left(1);
+                break;
+            case 'l':
+                move_cursor_right(1);
+                break;
+            case 'x':
+                /* It moves cursor because delch() deletes character behind the 
+                 * cursor not the character under it */
+                move_cursor_right(1);
+                delch();
+                break;
+            case 'i':
+                esc_pressed = 0;
+                break;
+            /* FIX: What should default be? */
+    }
+    } else {
+        putch(keycodes[scancode]);
+        key_buffer[strlen((char*)key_buffer)] = keycodes[scancode];
+    }
+}
 /* Scan code list:
  * https://www.scs.stanford.edu/10wi-cs140/pintos/specs/kbd/scancodes-1.html */
 void
@@ -83,6 +137,9 @@ keyboard_handler(struct registers* regs)
             case 0x2a | 0x80: /* Left Shift */
             case 0x36 | 0x80: /* Right Shift */
                 shift_pressed = 0;
+                break;
+            case 0x38 | 0x80: /* Left alt */
+                alt_pressed = 0;
                 break;
         }
     /* See if a key was pressed */
@@ -101,32 +158,11 @@ keyboard_handler(struct registers* regs)
             case 0x3a: /* Caps Lock */
                 caps_lock_pressed = !caps_lock_pressed;
                 break;
+            case 0x38: /* Left alt */
+                alt_pressed = 1;
+                break;
             default:
-                if (shift_pressed || caps_lock_pressed) {
-                    putch(keycodes_shift[scancode]); 
-                } else if (ctrl_pressed) {
-                    /* Support ctrl keys for keybindings */
-                } else if (esc_pressed) { /* Vim mode baby */
-                    switch (keycodes[scancode]) {
-                        case 'j':
-                            move_cursor_down(1);
-                            break;
-                        case 'k':
-                            move_cursor_up(1);
-                            break;
-                        case 'h':
-                            move_cursor_left(1);
-                            break;
-                        case 'l':
-                            move_cursor_right(1);
-                            break;
-                        case 'i':
-                            esc_pressed = 0;
-                            break;
-                        /* FIX: What should default be? */
-                    }
-                } else
-                    putch(keycodes[scancode]);
+                handle_keypress(scancode);
                 break;
         }
     }
