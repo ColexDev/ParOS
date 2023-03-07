@@ -3,7 +3,7 @@
 
 #include <stddef.h>
 
-char* itoa(int val, int base);
+char* itoa(size_t value, char *str, size_t base);
 void* memset(void *dest, int val, size_t len);
 void* memcpy(void *dest, const void *src, size_t len);
 void* kmalloc(size_t size);

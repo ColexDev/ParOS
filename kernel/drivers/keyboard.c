@@ -14,7 +14,8 @@ static uint8_t caps_lock_pressed = 0;
 static uint8_t esc_pressed       = 0;
 static uint8_t alt_pressed       = 0;
 
-static uint8_t key_buffer[VGA_WIDTH];
+static uint8_t last_key_press    = 0;
+static uint8_t key_read          = 0;
 
 /* Taken from https://github.com/krisvers/kros/blob/master/kernel/arch/x86/drivers/keyboard.c */
 static char keycodes[128] = {
@@ -71,12 +72,24 @@ static char keycodes_shift[128] = {
  * Buffer so backspace works correctly
  * Handle ALL keys correctly including shifts */
 
+char
+getchar()
+{
+    if (!key_read) {
+        key_read = 1;
+        return last_key_press;
+    } else {
+        return 0;
+    }
+}
+
 void
 handle_keypress(uint8_t scancode)
 {
     if (shift_pressed || caps_lock_pressed) {
-        putch(keycodes_shift[scancode]); 
-        key_buffer[strlen((char*)key_buffer)] = keycodes_shift[scancode];
+        // putch(keycodes_shift[scancode]); 
+        key_read = 0;
+        last_key_press = keycodes_shift[scancode];
     } else if (ctrl_pressed) {
         /* Support ctrl keys for keybindings */
     } else if (alt_pressed) {
@@ -117,8 +130,9 @@ handle_keypress(uint8_t scancode)
             /* FIX: What should default be? */
     }
     } else {
-        putch(keycodes[scancode]);
-        key_buffer[strlen((char*)key_buffer)] = keycodes[scancode];
+        // putch(keycodes[scancode]);
+        key_read = 0;
+        last_key_press = keycodes[scancode];
     }
 }
 /* Scan code list:

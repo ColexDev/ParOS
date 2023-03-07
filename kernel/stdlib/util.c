@@ -4,18 +4,18 @@
 extern uint32_t curr_free_mem;
 
 /* https://stackoverflow.com/questions/3982320/convert-integer-to-string-without-access-to-libraries */
-char*
-itoa(int val, int base) {
-
-    static char buf[32] = {0};
-
-    int i = 30;
-
-    for(; val && i ; --i, val /= base)
-        buf[i] = "0123456789abcdef"[val % base];
-
-    return &buf[i+1];
-}
+// char*
+// itoa(int val, int base) {
+//
+//     static char buf[32] = {0};
+//
+//     int i = 30;
+//
+//     for(; val && i ; --i, val /= base)
+//         buf[i] = "0123456789abcdef"[val % base];
+//
+//     return &buf[i+1];
+// }
 
 size_t
 strlen(const char* str) 
@@ -24,6 +24,32 @@ strlen(const char* str)
     while (str[len])
         len++;
     return len;
+}
+
+char*
+itoa(size_t value, char *str, size_t base) {
+    char *ptr = str;
+
+    do {
+        size_t mod = value % base;
+        unsigned char start = '0';
+        if ((base == 16) && (mod > 9)) {
+            start = 'a';
+            mod -= 10;
+        }
+        *ptr++ = start + mod;
+    } while ((value /= base) > 0);
+    *ptr = '\0';
+
+    size_t len = strlen(str);
+
+    for (int i = 0; i < len / 2; i++) {
+        char c = str[i];
+        str[i] = str[len - i - 1];
+        str[len - i - 1] = c;
+    }
+
+    return str;
 }
 
 void*

@@ -290,11 +290,13 @@ isr_handler(struct registers* regs)
         isr_handlers[regs->interrupt](regs);
     } else if (regs->interrupt >= 32) {
         puts("UNHANDLED INTERRUPT: ");
-        puts(itoa(regs->interrupt, 10));
+        // puts(itoa(regs->interrupt, 10));
         puts("\n");
     } else {
         puts("UNHANDLED EXCEPTION: ");
-        puts(itoa(regs->interrupt, 10));
+        char buf[100];
+        itoa(regs->interrupt, buf, 10);
+        puts(buf);
         puts("\n");
         puts("SERIOUS ERROR\n");
         kernel_panic();

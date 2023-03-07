@@ -76,6 +76,11 @@ print_header()
     for (int i = 13; i < (VGA_WIDTH); i++) {
         puts(" ");
     }
+    move_cursor(0, VGA_HEIGHT - 1);
+    for (int i = 0; i < VGA_WIDTH - 1; i++) {
+        puts(" ");
+    }
+    move_cursor(0, 1);
     // puts("Memory Usage: ");
     // puts(itoa(mem_used, 10));
     // puts(" bytes");
@@ -130,6 +135,7 @@ clear_screen()
             terminal_putentryat(' ', terminal_color, x, y);
         }
     }
+    print_header();
 }
 
 /* Credit to: https://stackoverflow.com/questions/35601175/adding-support-for-newlines-n-in-c */
