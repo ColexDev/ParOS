@@ -23,11 +23,9 @@ void
 timer_handler(struct registers* regs)
 {
     timer_ticks++;
-    // if (timer_ticks % FREQUENCY == 0) {
-    //     puts("One second has passed ");
-    //     puts(itoa(timer_ticks, 10));
-    //     puts("\n");
-    // }
+    if (timer_ticks % FREQUENCY == 0) {
+        // print_header();
+    }
 }
 
 void

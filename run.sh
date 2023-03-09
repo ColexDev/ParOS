@@ -1,2 +1,2 @@
 ./build.sh
-qemu-system-i386 -m 512 -cdrom paros.iso
+qemu-system-i386 -m 4g -cdrom paros.iso

@@ -2,6 +2,7 @@
 
 #include "vga.h"
 #include "tty.h"
+#include "cmos.h"
 #include "../stdlib/util.h"
 #include "../io/port_io.h"
 
@@ -53,9 +54,13 @@ switch_tty(uint8_t tty)
     update_cursor();
 }
 
+/* FIX: Change this to edit video memory directly */
 void
 print_header()
 {
+    // uint8_t old_x = terminal_column;
+    // uint8_t old_y = terminal_row;
+
     move_cursor(0, 0);
     // uint32_t mem_used = curr_free_mem - FREE_MEM_START;
     /* Set to white background */
@@ -73,14 +78,19 @@ print_header()
      * for displaying memory used.
      * TODO: Make tty driver better to avoid stuff like this */
     // for (int i = 5; i < (VGA_WIDTH - 20 - get_int_len(mem_used)); i++) {
-    for (int i = 13; i < (VGA_WIDTH); i++) {
+    for (int i = 13; i < (VGA_WIDTH - 16); i++) {
+        // terminal_putentryat(' ', vga_entry_color(VGA_COLOR_BLACK, VGA_COLOR_WHITE), i, 0);
         puts(" ");
     }
-    move_cursor(0, VGA_HEIGHT - 1);
-    for (int i = 0; i < VGA_WIDTH - 1; i++) {
-        puts(" ");
-    }
-    move_cursor(0, 1);
+
+    print_date();
+    puts(" ");
+    print_time();
+    // move_cursor(0, VGA_HEIGHT - 1);
+    // for (int i = 0; i < VGA_WIDTH - 1; i++) {
+    //     puts(" ");
+    // }
+    // move_cursor(0, 1);
     // puts("Memory Usage: ");
     // puts(itoa(mem_used, 10));
     // puts(" bytes");
@@ -88,6 +98,7 @@ print_header()
 
     /* Set back to default */
     terminal_setcolor(vga_entry_color(VGA_COLOR_WHITE, VGA_COLOR_BLACK));
+    // move_cursor(old_x, old_y);
 }
 
 void
@@ -118,9 +129,10 @@ terminal_putentryat(char c, uint8_t color, size_t x, size_t y)
 
 /* Scrolls the terminal by one line */
 void
-terminal_scroll(){
-    for(size_t y = 0; y < VGA_HEIGHT; y++){
-        for (size_t x = 0; x < VGA_WIDTH; x++){
+terminal_scroll()
+{
+    for (size_t y = 1; y < VGA_HEIGHT; y++) {
+        for (size_t x = 0; x < VGA_WIDTH; x++) {
             terminal_buffer[y * VGA_WIDTH + x] = terminal_buffer[(y + 1) * VGA_WIDTH + x];
         }
     }
@@ -135,6 +147,7 @@ clear_screen()
             terminal_putentryat(' ', terminal_color, x, y);
         }
     }
+    move_cursor(0, 1);
     print_header();
 }
 

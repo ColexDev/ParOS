@@ -22,5 +22,6 @@ void move_cursor_left(int num);
 void move_cursor_right(int num);
 void print_header();
 void switch_tty(uint8_t tty);
+void terminal_putentryat(char c, uint8_t color, size_t x, size_t y);
 
 #endif

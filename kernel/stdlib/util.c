@@ -1,6 +1,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "../stdlib/util.h"
+
 extern uint32_t curr_free_mem;
 
 /* https://stackoverflow.com/questions/3982320/convert-integer-to-string-without-access-to-libraries */
@@ -27,7 +29,8 @@ strlen(const char* str)
 }
 
 char*
-itoa(size_t value, char *str, size_t base) {
+itoa(uint64_t value, char *str, size_t base) {
+    memset(str, 0, strlen(str));
     char *ptr = str;
 
     do {

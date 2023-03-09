@@ -10,15 +10,17 @@
 #include "timer/timer.h"
 #include "drivers/keyboard.h"
 #include "drivers/vga.h"
+#include "drivers/cmos.h"
 #include "multiboot.h"
+#include "mm/mmap.h"
+#include "mm/pmm.h"
 
 void crash_me();
 void kernel_panic();
+void disable_blinking();
 extern uint32_t kernel_end;
 
-#define FREE_MEM_START 0x100000
-
-uint32_t curr_free_mem = FREE_MEM_START;
+uint32_t curr_free_mem;
 
 void
 kernel_main(multiboot_info_t* mbi, uint32_t magic) 
@@ -35,45 +37,18 @@ kernel_main(multiboot_info_t* mbi, uint32_t magic)
     irq_install();
     timer_install();
     keyboard_install();
+    print_mmap(mbi); /* This currently is needed to init free mem */
+    disable_blinking();
     clear_screen();
-    print_header();
 
-    uint32_t i = mbi->mmap_addr;
-    char buf[100];
-    while (i < mbi->mmap_addr + mbi->mmap_length) {
-        memset(buf, 0, 100);
-        multiboot_memory_map_t *me = (multiboot_memory_map_t*) i;
-        puts("Starts at: ");
-        itoa(me->addr_low, buf, 16);
-        puts(buf);
-        puts(" | ");
-        itoa(me->len_low, buf, 16);
-        puts(buf);
-        puts(" bytes long | Size: ");
-        itoa(me->size, buf, 16);
-        puts(buf);
-        puts(" | Type: ");
-        itoa(me->type, buf, 10);
-        puts(buf);
-        puts("\n");
+    // int* buffer = (int*)kmalloc(1000000);
+    // buffer[0] = 5;
+    // buffer[1] = 19;
+    // buffer[2] = 20;
+    // buffer[3] = 6;
 
-        i += me->size + sizeof(uint32_t);
-    }
-    puts("Kernel size: ");
-    itoa((mbi->mem_upper - mbi->mem_lower + FREE_MEM_START) / 1000, buf, 10);
-    puts(buf);
-    puts("kb\n");
-    curr_free_mem = mbi->mem_upper - mbi->mem_lower + FREE_MEM_START;
-
-    int* buffer = (int*)kmalloc(1000000);
-    buffer[0] = 5;
-    buffer[1] = 19;
-    buffer[2] = 20;
-    buffer[3] = 6;
-
-    /* WORLDS MOST BASIC SHELL */
     char shell_buf[50];
-    puts("\n$ ");
+    puts("$ ");
     for (;;) {
         char c = 0;
         while (!c) {
@@ -81,14 +56,25 @@ kernel_main(multiboot_info_t* mbi, uint32_t magic)
         }
         if (c == '\n') {
             puts("\n");
-            if (!kstrcmp(shell_buf, "ping"))
-                puts("pong!\n");
-            if (!kstrcmp(shell_buf, "clear"))
-                clear_screen();
-            if (!kstrcmp(shell_buf, "credits"))
+            if (!kstrcmp(shell_buf, "credits")) {
                 puts("\tParOS\n\tBy: ColexDev\n");
-            if (!kstrcmp(shell_buf, "exit"))
+            } else if (!kstrcmp(shell_buf, "ping")) {
+                puts("pong!\n");
+            } else if (!kstrcmp(shell_buf, "clear")) {
+                clear_screen();
+            } else if (!kstrcmp(shell_buf, "mmap")) {
+                print_mmap(mbi);
+            } else if (!kstrcmp(shell_buf, "time")) {
+                print_time();
+                puts("\n");
+            } else if (!kstrcmp(shell_buf, "date")) {
+                print_date();
+                puts("\n");
+            } else if (!kstrcmp(shell_buf, "exit")) {
                 break;
+            } else {
+                puts("Error: Command not found\n");
+            }
             memset(shell_buf, 0, strlen(shell_buf));
             puts("$ ");
         } else if (c) {
