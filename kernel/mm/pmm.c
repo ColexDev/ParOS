@@ -6,15 +6,16 @@
 /* I stg I am going schitzo */
 
 /*
- * 4 GiB / 4KiB = 1 MiB pages
- * 1 MiB / 8 bytes = 131072 bytes = 0x20000
+ * 4 GiB / 4KiB = 1 MiB (number of pages)
+ * 1 MiB / 8 bytes = 131072 bytes = 0x20000 (sizeof bitmap)
  */
-#define MAX_NUM_OF_PAGES 0x100000
+#define MAX_NUM_OF_PAGES    0x100000
 /* NOTE: Switching this to 32 may improve performance */
-#define WORD_LENGTH      0x8
-#define SIZE_OF_BITMAP   MAX_NUM_OF_PAGES / WORD_LENGTH
-#define KERNEL_START     0x100000 /* 1 MiB */
-#define PAGE_SIZE        0x1000   /* 4 KiB */
+#define WORD_LENGTH         0x8
+#define SIZE_OF_BITMAP      MAX_NUM_OF_PAGES / WORD_LENGTH
+#define KERNEL_START        0x100000  /* 1 MiB */
+#define PAGE_SIZE           0x1000    /* 4 KiB */
+#define RESERVED_FOR_KERNEL 0x6400000 /* 100 MiB */
 
 /* FIXME: SET THIS */
 uint32_t KERNEL_SIZE = 1; 
@@ -30,7 +31,7 @@ uint8_t bitmap[SIZE_OF_BITMAP];
  * */
 
 void
-pmm_set_page(uint32_t page)
+pmm_alloc_page(uint32_t page)
 {
     bitmap[page / WORD_LENGTH] |= (1 << (page % WORD_LENGTH));
 }
@@ -53,7 +54,7 @@ uint32_t
 pmm_find_free_page()
 {
     for (uint32_t i = 0; i < SIZE_OF_BITMAP; i++) {
-        uint32_t byte = bitmap[i];
+        uint8_t byte = bitmap[i];
 
         /* Move on if no 0 bits in byte */
         if (byte == 255)
@@ -73,7 +74,7 @@ uint32_t
 pmm_request_page()
 {
     uint32_t page_number = pmm_find_free_page();
-    pmm_set_page(page_number);
+    pmm_alloc_page(page_number);
     return page_number * 0x1000;
 }
 
@@ -82,9 +83,10 @@ pmm_reserve_memory()
 {
     /* Kernel starts at 0x100000, so we need to reserve
      * up to 0x100000 plus however big the kernel is.
-     * CURRENTLY the loop iterates over pages UP TO 0x100000 */
-    for (uint32_t page = 0; page < (KERNEL_START / PAGE_SIZE); page++) {
-        pmm_set_page(page);
+     * CURRENTLY the loop iterates over pages UP TO 0x100000
+     * NOTE: For now I am doing 0x6400000 (100 MiB) reserved for the kernel*/
+    for (uint32_t page = 0; page < ((KERNEL_START + RESERVED_FOR_KERNEL) / PAGE_SIZE); page++) {
+        pmm_alloc_page(page);
     }
 
     /* What do I need to reserve all non usable memory? 
