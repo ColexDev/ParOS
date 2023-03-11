@@ -3,6 +3,8 @@
 #include "../stdlib/util.h"
 #include "../drivers/tty.h"
 
+/* I stg I am going schitzo */
+
 /*
  * 4 GiB / 4KiB = 1 MiB pages
  * 1 MiB / 8 bytes = 131072 bytes = 0x20000
@@ -10,11 +12,12 @@
 #define MAX_NUM_OF_PAGES 0x100000
 /* NOTE: Switching this to 32 may improve performance */
 #define WORD_LENGTH      0x8
-#define SIZE_OF_BITMAP MAX_NUM_OF_PAGES / WORD_LENGTH
+#define SIZE_OF_BITMAP   MAX_NUM_OF_PAGES / WORD_LENGTH
 #define KERNEL_START     0x100000 /* 1 MiB */
 #define PAGE_SIZE        0x1000   /* 4 KiB */
 
-uint32_t KERNEL_SIZE     = 1; 
+/* FIXME: SET THIS */
+uint32_t KERNEL_SIZE = 1; 
 
 /* Length of page frame will always be 4096 bytes (4KiB) (0x1000) */
 uint8_t bitmap[SIZE_OF_BITMAP];
@@ -27,56 +30,51 @@ uint8_t bitmap[SIZE_OF_BITMAP];
  * */
 
 void
-pmm_set_page(uint8_t page)
+pmm_set_page(uint32_t page)
 {
     bitmap[page / WORD_LENGTH] |= (1 << (page % WORD_LENGTH));
 }
 
 void
-pmm_clear_page(uint8_t page)
+pmm_free_page(uint32_t page)
 {
     bitmap[page / WORD_LENGTH] &= ~(1 << (page % WORD_LENGTH));
 }
 
 uint8_t
-pmm_get_page(uint8_t page)
+pmm_get_page(uint32_t page)
 {
     uint8_t ret = bitmap[page / WORD_LENGTH] & (1 << (page % WORD_LENGTH));
     return ret != 0;
 }
 
+/* Returns the first free page */
 uint32_t
 pmm_find_free_page()
 {
-    uint8_t offset;
+    for (uint32_t i = 0; i < SIZE_OF_BITMAP; i++) {
+        uint32_t byte = bitmap[i];
 
-    for (int byte = 0; byte < SIZE_OF_BITMAP; byte++) {
+        /* Move on if no 0 bits in byte */
         if (byte == 255)
             continue;
 
         /* Get rightmost 0 bit (free page) */
-        uint8_t num = ~byte & (byte + 1);
-        switch (num) {
-            case 1:
-                offset = 0;
-            case 2:
-                offset = 1;
-            case 4:
-                offset = 2;
-            case 8:
-                offset = 3;
-            case 16:
-                offset = 4;
-            case 32:
-                offset = 5;
-            case 64:
-                offset = 6;
-            case 128:
-                offset = 7;
-        }
-        return byte * WORD_LENGTH + offset;
+        uint8_t offset = __builtin_ctz(~byte);
+
+        /* Finds the page number */
+        return i * WORD_LENGTH + offset;
     }
     return 0;
+}
+
+/* Returns the address of the page */
+uint32_t
+pmm_request_page()
+{
+    uint32_t page_number = pmm_find_free_page();
+    pmm_set_page(page_number);
+    return page_number * 0x1000;
 }
 
 void
@@ -105,6 +103,6 @@ pmm_reserve_memory()
 void
 pmm_init()
 {
-    memset(bitmap, 0, MAX_NUM_OF_PAGES * sizeof(uint8_t));
+    memset(bitmap, 0, SIZE_OF_BITMAP);
     pmm_reserve_memory();
 }

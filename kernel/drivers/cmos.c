@@ -140,13 +140,14 @@ print_time()
     char buf[5];
     read_rtc();
 
+    memset(buf, 0, 5);
     /* Time */
+    itoa(hour, buf, 10);
     /* Pads hour with a 0 */
     if (strlen(buf) == 1) {
         buf[1] = buf[0];
         buf[0] = '0';
     }
-    itoa(hour, buf, 10);
     puts(buf);
     puts(":");
     itoa(minute, buf, 10);

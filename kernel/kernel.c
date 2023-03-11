@@ -40,6 +40,9 @@ kernel_main(multiboot_info_t* mbi, uint32_t magic)
     print_mmap(mbi); /* This currently is needed to init free mem */
     disable_blinking();
     clear_screen();
+    pmm_init();
+
+    pmm_request_page();
 
     // int* buffer = (int*)kmalloc(1000000);
     // buffer[0] = 5;
@@ -47,41 +50,41 @@ kernel_main(multiboot_info_t* mbi, uint32_t magic)
     // buffer[2] = 20;
     // buffer[3] = 6;
 
-    char shell_buf[50];
-    puts("$ ");
-    for (;;) {
-        char c = 0;
-        while (!c) {
-            c = getchar();
-        }
-        if (c == '\n') {
-            puts("\n");
-            if (!kstrcmp(shell_buf, "credits")) {
-                puts("\tParOS\n\tBy: ColexDev\n");
-            } else if (!kstrcmp(shell_buf, "ping")) {
-                puts("pong!\n");
-            } else if (!kstrcmp(shell_buf, "clear")) {
-                clear_screen();
-            } else if (!kstrcmp(shell_buf, "mmap")) {
-                print_mmap(mbi);
-            } else if (!kstrcmp(shell_buf, "time")) {
-                print_time();
-                puts("\n");
-            } else if (!kstrcmp(shell_buf, "date")) {
-                print_date();
-                puts("\n");
-            } else if (!kstrcmp(shell_buf, "exit")) {
-                break;
-            } else {
-                puts("Error: Command not found\n");
-            }
-            memset(shell_buf, 0, strlen(shell_buf));
-            puts("$ ");
-        } else if (c) {
-            shell_buf[strlen(shell_buf)] = c;
-            putch(c);
-        }
-    }
+    // char shell_buf[50];
+    // puts("$ ");
+    // for (;;) {
+    //     char c = 0;
+    //     while (!c) {
+    //         c = getchar();
+    //     }
+    //     if (c == '\n') {
+    //         puts("\n");
+    //         if (!kstrcmp(shell_buf, "credits")) {
+    //             puts("\tParOS\n\tBy: ColexDev\n");
+    //         } else if (!kstrcmp(shell_buf, "ping")) {
+    //             puts("pong!\n");
+    //         } else if (!kstrcmp(shell_buf, "clear")) {
+    //             clear_screen();
+    //         } else if (!kstrcmp(shell_buf, "mmap")) {
+    //             print_mmap(mbi);
+    //         } else if (!kstrcmp(shell_buf, "time")) {
+    //             print_time();
+    //             puts("\n");
+    //         } else if (!kstrcmp(shell_buf, "date")) {
+    //             print_date();
+    //             puts("\n");
+    //         } else if (!kstrcmp(shell_buf, "exit")) {
+    //             break;
+    //         } else {
+    //             puts("Error: Command not found\n");
+    //         }
+    //         memset(shell_buf, 0, strlen(shell_buf));
+    //         puts("$ ");
+    //     } else if (c) {
+    //         shell_buf[strlen(shell_buf)] = c;
+    //         putch(c);
+    //     }
+    // }
 
 
     // print_header();
