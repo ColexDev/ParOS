@@ -3,9 +3,6 @@
 #include "../stdlib/util.h"
 #include "../drivers/tty.h"
 
-/* FIXME: I think all my math is wrong here???? 
- * FIXME: especially MAX_NUM_OF_PAGES */
-
 /*
  * 4 GiB / 4KiB = 1 MiB pages
  * 1 MiB / 8 bytes = 131072 bytes = 0x20000
