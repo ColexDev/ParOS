@@ -23,26 +23,32 @@ extern uint32_t kernel_end;
 uint32_t curr_free_mem;
 
 void
-kernel_main(multiboot_info_t* mbi, uint32_t magic) 
+// kernel_main(multiboot_info_t* mbi, uint32_t magic) 
+kernel_main() 
 {
     /* TODO: make a better kernel panic function */
-    if (magic != MULTIBOOT_BOOTLOADER_MAGIC)
-        kernel_panic();
-
-    /* Initialize terminal interface */
-    terminal_initialize();
-    gdt_install();
-    idt_install();
-    isr_install();
-    irq_install();
-    timer_install();
-    keyboard_install();
-    print_mmap(mbi); /* This currently is needed to init free mem */
-    disable_blinking();
-    clear_screen();
-    pmm_init();
-
-    pmm_request_page();
+    // if (magic != MULTIBOOT_BOOTLOADER_MAGIC)
+    //     kernel_panic();
+    //
+    // /* Initialize terminal interface */
+    // terminal_initialize();
+    // gdt_install();
+    // idt_install();
+    // isr_install();
+    // irq_install();
+    // timer_install();
+    // keyboard_install();
+    // print_mmap(mbi); /* This currently is needed to init free mem */
+    // disable_blinking();
+    // clear_screen();
+    // pmm_init();
+    //
+    // char buf[10];
+    // itoa(pmm_request_page(), buf, 16);
+    // puts(buf);
+    // puts("\n");
+    // itoa(pmm_request_page(), buf, 16);
+    // puts(buf);
 
     // int* buffer = (int*)kmalloc(1000000);
     // buffer[0] = 5;

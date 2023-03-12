@@ -1,8 +1,8 @@
-[bits 32]
+[bits 64]
 
 extern isr_handler
 
-; Cpu pushes to the stack: ss, esp, eflags, cs, eip
+; Cpu pushes to the stack: ss, rsp, eflags, cs, eip
 
 %macro ISR_NOERRORCODE 1
 global isr%1:
@@ -277,12 +277,48 @@ ISR_NOERRORCODE 253
 ISR_NOERRORCODE 254
 ISR_NOERRORCODE 255
 
-isr_common:
-    pusha               ; Pushes in order: eax, ecx, edx, ebx, esp, ebp, esi, edi
+%macro pushaq 0
+    push r15
+    push r14
+    push r13
+    push r12
+    push r11
+    push r10
+    push r9
+    push r8
+    push rbp
+    push rdi
+    push rsi
+    push rdx
+    push rcx
+    push rbx
+    push rax
+%endmacro
 
-    xor eax, eax        ; Push ds
+%macro popaq 0
+    pop rax
+    pop rbx
+    pop rcx
+    pop rdx
+    pop rsi
+    pop rdi
+    pop rbp
+    pop r8
+    pop r9
+    pop r10
+    pop r11
+    pop r12
+    pop r13
+    pop r14
+    pop r15
+%endmacro
+
+isr_common:
+    pushaq               ; Pushes in order: rax, ecx, edx, ebx, rsp, ebp, esi, edi
+
+    xor rax, rax        ; Push ds
     mov ax, ds
-    push eax
+    push rax
 
     mov ax, 0x10        ; Use kernel data segment
     mov ds, ax
@@ -290,16 +326,16 @@ isr_common:
     mov fs, ax
     mov gs, ax
     
-    push esp            ; Pass pointer to stack to C, so we can access all the pushed information
+    push rsp            ; Pass pointer to stack to C, so we can access all the pushed information
     call isr_handler
-    add esp, 4
+    add rsp, 4
 
-    pop eax             ; Restore old segment
+    pop rax             ; Restore old segment
     mov ds, ax
     mov es, ax
     mov fs, ax
     mov gs, ax
 
-    popa
-    add esp, 8          ; Remove error code and interrupt number
-    iret                ; Will pop: cs, eip, eflags, ss, esp (these were pushed by CPU)
+    popaq
+    add rsp, 8          ; Remove error code and interrupt number
+    iret                ; Will pop: cs, eip, eflags, ss, rsp (these were pushed by CPU)
