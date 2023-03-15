@@ -23,6 +23,63 @@ extern uint32_t kernel_end;
 uint32_t curr_free_mem;
 
 void
+run_shell(multiboot_info_t* mbi)
+{
+    char shell_buf[50] = {0};
+
+    puts("$ ");
+
+    for (;;) {
+        char c = 0;
+
+        while (!c) {
+            c = getchar();
+        }
+
+        if (c == '\n') {
+            puts("\n");
+            if (!kstrcmp(shell_buf, "credits")) {
+                puts("\tParOS\n\tBy: ColexDev\n");
+            } else if (!kstrcmp(shell_buf, "ping")) {
+                puts("pong!\n");
+            } else if (!kstrcmp(shell_buf, "clear")) {
+                clear_screen();
+            } else if (!kstrcmp(shell_buf, "time")) {
+                print_time();
+                puts("\n");
+            } else if (!kstrcmp(shell_buf, "date")) {
+                print_date();
+                puts("\n");
+            } else if (!kstrcmp(shell_buf, "memmap")) {
+                print_mmap(mbi);
+            } else if (!kstrcmp(shell_buf, "memused")) {
+                char buf[32] = {0};
+                itoa(pmm_get_used_memory(), buf, 10);
+                puts(buf);
+                puts(" bytes\n");
+            } else if (!kstrcmp(shell_buf, "memreserved")) {
+                char buf[32] = {0};
+                itoa(pmm_get_reserved_memory(), buf, 10);
+                puts(buf);
+                puts(" bytes\n");
+            } else if (!kstrcmp(shell_buf, "exit")) {
+                break;
+            } else {
+                puts("Error: Command not found\n");
+            }
+            memset(shell_buf, 0, strlen(shell_buf));
+            puts("$ ");
+        } else if (c == 8) { /* Backspace */
+            shell_buf[strlen(shell_buf) - 1] = '\0';
+            delch();
+        } else if (c) {
+            shell_buf[strlen(shell_buf)] = c;
+            putch(c);
+        }
+    }
+}
+
+void
 kernel_main(multiboot_info_t* mbi, uint32_t magic) 
 {
     /* TODO: make a better kernel panic function */
@@ -42,50 +99,17 @@ kernel_main(multiboot_info_t* mbi, uint32_t magic)
     clear_screen();
     pmm_init();
 
-    pmm_request_page();
+    uint32_t* buffer = (uint32_t*)pmm_request_page();
+    buffer[0] = 5;
+    buffer[1] = 19;
+    buffer[2] = 20;
+    buffer[3] = 6;
+    char buf[5];
+    itoa(buffer[1], buf, 10);
+    puts(buf);
+    puts("\n");
 
-    // int* buffer = (int*)kmalloc(1000000);
-    // buffer[0] = 5;
-    // buffer[1] = 19;
-    // buffer[2] = 20;
-    // buffer[3] = 6;
-
-    // char shell_buf[50];
-    // puts("$ ");
-    // for (;;) {
-    //     char c = 0;
-    //     while (!c) {
-    //         c = getchar();
-    //     }
-    //     if (c == '\n') {
-    //         puts("\n");
-    //         if (!kstrcmp(shell_buf, "credits")) {
-    //             puts("\tParOS\n\tBy: ColexDev\n");
-    //         } else if (!kstrcmp(shell_buf, "ping")) {
-    //             puts("pong!\n");
-    //         } else if (!kstrcmp(shell_buf, "clear")) {
-    //             clear_screen();
-    //         } else if (!kstrcmp(shell_buf, "mmap")) {
-    //             print_mmap(mbi);
-    //         } else if (!kstrcmp(shell_buf, "time")) {
-    //             print_time();
-    //             puts("\n");
-    //         } else if (!kstrcmp(shell_buf, "date")) {
-    //             print_date();
-    //             puts("\n");
-    //         } else if (!kstrcmp(shell_buf, "exit")) {
-    //             break;
-    //         } else {
-    //             puts("Error: Command not found\n");
-    //         }
-    //         memset(shell_buf, 0, strlen(shell_buf));
-    //         puts("$ ");
-    //     } else if (c) {
-    //         shell_buf[strlen(shell_buf)] = c;
-    //         putch(c);
-    //     }
-    // }
-
+    run_shell(mbi);
 
     // print_header();
     // delay(1000);

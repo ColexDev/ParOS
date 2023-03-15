@@ -25,6 +25,12 @@ struct tty
 static struct tty ttys[3] = {{.cursor_x = 0, .cursor_y = 1}, {.cursor_x = 0, .cursor_y = 1}, {.cursor_x = 0, .cursor_y = 1}};
 uint8_t current_tty = 1; /* NOT zero indexed */
 
+uint8_t
+get_current_tty()
+{
+    return current_tty;
+}
+
 void
 switch_tty(uint8_t tty)
 {
