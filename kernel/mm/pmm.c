@@ -2,20 +2,13 @@
 
 #include "../stdlib/util.h"
 #include "../drivers/tty.h"
+#include "paging.h"
+#include "pmm.h"
+
+uint32_t used_memory = 0;
+uint32_t reserved_memory = 0;
 
 /* I stg I am going schitzo */
-
-/*
- * 4 GiB / 4KiB = 1 MiB (number of pages)
- * 1 MiB / 8 bytes = 131072 bytes = 0x20000 (sizeof bitmap)
- */
-#define MAX_NUM_OF_PAGE_FRAMES 0x100000
-/* NOTE: Switching this to 32 may improve performance */
-#define WORD_LENGTH            0x8
-#define SIZE_OF_BITMAP         MAX_NUM_OF_PAGE_FRAMES / WORD_LENGTH
-#define KERNEL_START           0x100000  /* 1 MiB */
-#define PAGE_FRAME_SIZE        0x1000    /* 4 KiB */
-#define RESERVED_FOR_KERNEL    0x6400000 /* 100 MiB */
 
 /* FIXME: SET THIS */
 uint32_t KERNEL_SIZE = 1; 
@@ -30,9 +23,6 @@ uint8_t bitmap[SIZE_OF_BITMAP] = {0};
  * Algo is byte * WORD_LENGTH + bit
  * */
 
-uint32_t used_memory = 0;
-uint32_t reserved_memory = 0;
-
 uint32_t
 pmm_get_used_memory()
 {
@@ -46,27 +36,27 @@ pmm_get_reserved_memory()
 }
 
 void
-pmm_alloc_page_frame(uint32_t frame)
+pmm_set_frame(uint32_t frame)
 {
-    bitmap[frame / WORD_LENGTH] |= (1 << (frame % WORD_LENGTH));
+    bitmap[WORD_OFFSET(frame)] |= (1 << BIT_OFFSET(frame));
 }
 
 void
-pmm_free_page_frame(uint32_t frame)
+pmm_clear_frame(uint32_t frame)
 {
-    bitmap[frame / WORD_LENGTH] &= ~(1 << (frame % WORD_LENGTH));
+    bitmap[WORD_OFFSET(frame)] &= ~(1 << BIT_OFFSET(frame));
 }
 
 uint8_t
-pmm_get_page_frame(uint32_t frame)
+pmm_get_frame(uint32_t frame)
 {
-    uint8_t ret = bitmap[frame / WORD_LENGTH] & (1 << (frame % WORD_LENGTH));
+    uint8_t ret = bitmap[WORD_OFFSET(frame)] & (1 << BIT_OFFSET(frame));
     return ret != 0;
 }
 
 /* Returns the first free page frame */
 uint32_t
-pmm_find_free_page_frame()
+pmm_find_free_frame()
 {
     for (uint32_t i = 0; i < SIZE_OF_BITMAP; i++) {
         uint8_t byte = bitmap[i];
@@ -84,18 +74,18 @@ pmm_find_free_page_frame()
     return 0;
 }
 
-/* Returns the address of the page frame */
 void*
-pmm_request_page_frame()
+pmm_alloc_frame()
 {
-    uint32_t page_number = pmm_find_free_page_frame();
-    pmm_alloc_page_frame(page_number);
+    uint32_t frame = pmm_find_free_frame();
+    pmm_set_frame(frame);
 
-    used_memory += 4096;
+    used_memory += PAGE_FRAME_SIZE;
 
-    return (void*)(page_number * 0x1000);
+    return (void*)(frame * 0x1000);
 }
 
+/* FIXME: Change this to identity mapping the kernel */
 void
 pmm_reserve_memory()
 {
@@ -103,9 +93,9 @@ pmm_reserve_memory()
      * up to 0x100000 plus however big the kernel is.
      * CURRENTLY the loop iterates over pages UP TO 0x100000
      * */
-    for (uint32_t page = 0; page < ((KERNEL_START) / PAGE_FRAME_SIZE); page++) {
-        pmm_alloc_page_frame(page);
-        reserved_memory += 4096;
+    for (uint32_t page = 1; page < ((KERNEL_START) / PAGE_FRAME_SIZE); page++) {
+        pmm_set_frame(page);
+        reserved_memory += PAGE_FRAME_SIZE;
     }
 
     /* What do I need to reserve all non usable memory? 
@@ -124,5 +114,4 @@ pmm_reserve_memory()
 void
 pmm_init()
 {
-    pmm_reserve_memory();
 }

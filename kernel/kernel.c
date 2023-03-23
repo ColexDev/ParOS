@@ -14,11 +14,12 @@
 #include "multiboot.h"
 #include "mm/mmap.h"
 #include "mm/pmm.h"
+#include "mm/paging.h"
 
 void crash_me();
 void kernel_panic();
 void disable_blinking();
-extern uint32_t kernel_end;
+extern uint64_t kernel_end;
 
 uint32_t curr_free_mem;
 
@@ -99,15 +100,11 @@ kernel_main(multiboot_info_t* mbi, uint32_t magic)
     clear_screen();
     pmm_init();
 
-    uint32_t* buffer = (uint32_t*)pmm_request_page();
-    buffer[0] = 5;
-    buffer[1] = 19;
-    buffer[2] = 20;
-    buffer[3] = 6;
-    char buf[5];
-    itoa(buffer[1], buf, 10);
+    char buf[64] = {0};
+    itoa(&kernel_end - (uint64_t*)0x100000, buf, 10);
+    puts("Kernel Size: ");
     puts(buf);
-    puts("\n");
+    puts(" bytes\n");
 
     run_shell(mbi);
 

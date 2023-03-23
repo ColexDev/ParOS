@@ -19,7 +19,7 @@ print_mmap(multiboot_info_t* mbi)
         memset(buf, 0, 100);
         multiboot_memory_map_t *me = (multiboot_memory_map_t*) i;
         puts("Starts at: 0x");
-        itoa(((uint64_t)me->addr_high << 32) | me->addr_low, buf, 10);
+        itoa(((uint64_t)me->addr_high << 32) | me->addr_low, buf, 16);
         puts(buf);
         puts(" | ");
         itoa(me->len_low, buf, 10);
