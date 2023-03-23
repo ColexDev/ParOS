@@ -4,23 +4,24 @@
 #include "paging.h"
 #include "pmm.h"
 
-// struct page_directory kernel_pdir __attribute__((aligned(PAGE_FRAME_SIZE)));
-uint32_t* kernel_pdir[1024] __attribute__((aligned(PAGE_FRAME_SIZE)));
-uint32_t page_table[1024] __attribute__((aligned(PAGE_FRAME_SIZE)));
+uint32_t kernel_pdir[1024] __attribute__((aligned(PAGE_FRAME_SIZE)));
+uint32_t first_page_table[1024] __attribute__((aligned(PAGE_FRAME_SIZE)));
 
 extern uint32_t used_memory;
+
+extern void write_cr3(uint32_t*);
+extern void write_cr0(uint32_t);
+extern uint32_t read_cr0();
 
 void
 map_page(void* phys, void* virt)
 {
-    page_table[0]  = 0 | 3;
-    kernel_pdir[0] = page_table;
 }
 
 void
-alloc_page(struct page* p, uint8_t is_kernel, uint8_t is_writeable)
+alloc_page(uint32_t* page, uint8_t is_kernel, uint8_t is_writeable)
 {
-    if (p->frame != 0) /* Already alloced */
+    if (GET_PAGE_FRAME(*page) != 0) /* Already alloced */
         return;
 
     uint32_t frame = pmm_find_free_frame();
@@ -28,47 +29,47 @@ alloc_page(struct page* p, uint8_t is_kernel, uint8_t is_writeable)
 
     used_memory += PAGE_FRAME_SIZE;
 
-    p->present = PRESENT;
-    p->rw      = is_writeable;
-    p->user    = !is_kernel;
-    p->frame   = frame;
+    *page |= PRESENT;
+    *page |= is_writeable;
+    *page |= !is_kernel;
+    *page |= frame;
 }
 
 void
-free_page(struct page* p)
+free_page(uint32_t* page)
 {
-    if (!p->frame)
+    if (!(GET_PAGE_FRAME(*page)))
         return;
 
-    pmm_clear_frame(p->frame);
+    pmm_clear_frame(GET_PAGE_FRAME(*page));
 
-    p->frame   = 0;
-    p->present = 0;
+    /* Clears page frame, 0xFFFFF is the most significant 20 bits */
+    *page &= ~0xFFFFF;
+    *page &= ~PRESENT;
 }
 
-struct page*
-get_page(uint32_t address, struct page_directory* dir)
+void 
+enable_paging()
 {
-    uint32_t frame = address / PAGE_FRAME_SIZE;
-    uint32_t table_index = frame / PAGE_FRAME_SIZE;
-
-    if (dir->tables[table_index])
-        return &dir->tables[table_index]->pages[frame % PAGE_FRAME_SIZE];
-    /* else */
-
-    /* Create the table if it does not exist */
-    dir->tables[table_index] = (struct page_table*)pmm_alloc_frame();
-    memset(dir->tables[table_index], 0, PAGE_FRAME_SIZE);
-    return &dir->tables[table_index]->pages[frame % PAGE_FRAME_SIZE];
+   asm volatile("mov %0, %%cr3":: "r"(kernel_pdir));
+   uint32_t cr0;
+   asm volatile("mov %%cr0, %0": "=r"(cr0));
+   cr0 |= 0x80000000;
+   asm volatile("mov %0, %%cr0":: "r"(cr0));
 }
 
 void
 init_paging()
 {
-    // struct page p;
-    // pmm_alloc_page(&p, 1, 1);
-    for(int i = 1; i < 1024; i++)
-    {
-        kernel_pdir[i] = 0 | 2; // attribute set to: supervisor level, read/write, not present(010 in binary)
+    for(int i = 0; i < 1024; i++) {
+        kernel_pdir[i] = 2; // attribute set to: supervisor level, read/write, not present(010 in binary)
     }
+
+    /* Identity maps the first 4 MiB of memory */
+    for (int i = 0; i < 1024; i++) {
+        first_page_table[i] = (i * 0x1000) | 3;
+    }
+
+    kernel_pdir[0] = ((uint32_t)first_page_table) | 3;
+    enable_paging();
 }

@@ -15,8 +15,6 @@
 #define PAGE_FRAME_SIZE        0x1000    /* 4 KiB */
 #define RESERVED_FOR_KERNEL    0x6400000 /* 100 MiB */
 
-#define PRESENT 1
-
 #define WORD_OFFSET(b) ((b) / WORD_LENGTH)
 #define BIT_OFFSET(b)  ((b) % WORD_LENGTH)
 

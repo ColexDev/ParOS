@@ -106,7 +106,9 @@ kernel_main(multiboot_info_t* mbi, uint32_t magic)
     puts(buf);
     puts(" bytes\n");
 
-    run_shell(mbi);
+    init_paging();
+    puts("PAGING\n");
+    // run_shell(mbi);
 
     // print_header();
     // delay(1000);
