@@ -108,6 +108,7 @@ void read_rtc() {
     }
 }
 
+/* FIXME: CHANGE TO GET INSTEAD OF PRINT, RETURN A STRING */
 void
 print_date()
 {
