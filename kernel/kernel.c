@@ -43,14 +43,19 @@ run_shell(multiboot_info_t* mbi)
                 puts("\tParOS\n\tBy: ColexDev\n");
             } else if (!kstrcmp(shell_buf, "ping")) {
                 puts("pong!\n");
+            } else if (!kstrcmp(shell_buf, "panic")) {
+                kprintf("Okay... You asked for it...\nPANIC\n");
+                kernel_panic();
             } else if (!kstrcmp(shell_buf, "clear")) {
                 clear_screen();
             } else if (!kstrcmp(shell_buf, "time")) {
-                print_time();
-                puts("\n");
+                char* time;
+                get_time_string(time);
+                kprintf("%s\n", time);
             } else if (!kstrcmp(shell_buf, "date")) {
-                print_date();
-                puts("\n");
+                char* date;
+                get_date_string(date);
+                kprintf("%s\n", date);
             } else if (!kstrcmp(shell_buf, "memmap")) {
                 print_mmap(mbi);
             } else if (!kstrcmp(shell_buf, "memused")) {
@@ -100,11 +105,7 @@ kernel_main(multiboot_info_t* mbi, uint32_t magic)
     clear_screen();
     pmm_init();
 
-    char buf[64] = {0};
-    itoa(&kernel_end - (uint64_t*)0x100000, buf, 10);
-    puts("Kernel Size: ");
-    puts(buf);
-    puts(" bytes\n");
+    kprintf("Kernel Size: %d bytes\n", &kernel_end - (uint64_t*)0x100000);
 
     init_paging();
     run_shell(mbi);

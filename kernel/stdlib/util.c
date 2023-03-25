@@ -1,23 +1,11 @@
+#include <stdarg.h>
 #include <stddef.h>
 #include <stdint.h>
 
 #include "../stdlib/util.h"
+#include "../drivers/tty.h"
 
 extern uint32_t curr_free_mem;
-
-/* https://stackoverflow.com/questions/3982320/convert-integer-to-string-without-access-to-libraries */
-// char*
-// itoa(int val, int base) {
-//
-//     static char buf[32] = {0};
-//
-//     int i = 30;
-//
-//     for(; val && i ; --i, val /= base)
-//         buf[i] = "0123456789abcdef"[val % base];
-//
-//     return &buf[i+1];
-// }
 
 size_t
 strlen(const char* str) 
@@ -74,6 +62,14 @@ memset(void *dest, int val, size_t len)
     return dest;
 }
 
+char* 
+kstrcat(char *a, char *b) {
+    while (*a++);
+    a--;
+    while (*a++ = *b++);
+    return a;
+}
+
 void*
 kmalloc(size_t size)
 {
@@ -91,7 +87,7 @@ get_int_len(int value)
 {
     int l = 1;
 
-    while (value > 9){
+    while (value > 9) {
         l++;
         value/=10;
     }
@@ -108,3 +104,53 @@ kstrcmp(char s1[], char s2[])
     }
     return s1[i] - s2[i];
 }
+
+void
+kprintf(const char* format, ...)
+{
+    va_list args;
+    va_start(args, format);
+
+    while (*format) {
+        if (*format == '%') {
+            format++;
+            if (*format == 'd' || *format == 'i') {
+                int value = va_arg(args, int);
+                char buffer[32] = {0};
+                itoa(value, buffer, 10);
+                puts(buffer);
+            } else if (*format == 'u') {
+                unsigned int value = va_arg(args, unsigned int);
+                char buffer[32] = {0};
+                itoa(value, buffer, 10);
+                puts(buffer);
+            } else if (*format == 'x' || *format == 'X') {
+                unsigned int value = va_arg(args, unsigned int);
+                char buffer[32] = {0};
+                itoa(value, buffer, 16);
+                puts(buffer);
+            } else if (*format == 's') {
+                char* str = va_arg(args, char*);
+                puts(str);
+            } else if (*format == 'c') {
+                char c = (char)va_arg(args, int);
+                putch(c);
+            } else if (*format == 'p') {
+                unsigned long value = va_arg(args, unsigned long);
+                char buffer[32] = {0};
+                itoa(value, buffer, 16);
+                puts("0x");
+                puts(buffer);
+            } else {
+                putch('%');
+                putch(*format);
+            }
+        } else {
+            putch(*format);
+        }
+        format++;
+    }
+
+    va_end(args);
+}
+

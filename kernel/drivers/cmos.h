@@ -9,7 +9,7 @@ extern unsigned char month;
 extern unsigned int  year;
 
 void read_rtc();
-void print_date();
-void print_time();
+void get_date_string(char* date_str);
+void get_time_string(char* time_str);
 
 #endif /* #ifndef CMOS_H */
