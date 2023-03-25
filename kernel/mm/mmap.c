@@ -2,7 +2,7 @@
 
 #include "../stdlib/util.h"
 #include "../multiboot.h"
-#include "../drivers//tty.h"
+#include "../drivers/tty.h"
 
 #define KERNEL_START 0x100000 /* 1 MiB */
 
@@ -11,42 +11,23 @@ extern uint32_t curr_free_mem;
 uint32_t total_bytes_ram;
 
 void
-print_mmap(multiboot_info_t* mbi)
+parse_multiboot_mmap(multiboot_info_t* mbi)
 {
-    uint32_t i = mbi->mmap_addr;
-    char buf[100];
-    while (i < mbi->mmap_addr + mbi->mmap_length) {
-        memset(buf, 0, 100);
-        multiboot_memory_map_t *me = (multiboot_memory_map_t*) i;
-        puts("Starts at: 0x");
-        itoa(((uint64_t)me->addr_high << 32) | me->addr_low, buf, 16);
-        puts(buf);
-        puts(" | ");
-        itoa(me->len_low, buf, 10);
-        puts(buf);
-        puts(" bytes long | Size: 0x");
-        itoa(me->size, buf, 16);
-        puts(buf);
-        puts(" | Type: ");
-        itoa(me->type, buf, 10);
-        puts(buf);
-        puts("\n");
+    multiboot_memory_map_t* mmap = (multiboot_memory_map_t*)mbi->mmap_addr;
+    uint32_t mmap_end = mbi->mmap_addr + mbi->mmap_length;
 
-        if (me->type == 1) {
-            total_bytes_ram += me->len_low;
+    while ((uint32_t)mmap < mmap_end) {
+        uint64_t base_addr = ((uint64_t)mmap->addr_high << 32) | mmap->addr_low;
+        uint64_t length = ((uint64_t)mmap->len_high << 32) | mmap->len_low;
+
+        if (mmap->type == MULTIBOOT_MEMORY_AVAILABLE) {
+            kprintf("Usable memory:   0x%llx - 0x%llx (%llu bytes)\n", base_addr, base_addr + length - 1, length);
+        } else if (mmap->type == MULTIBOOT_MEMORY_RESERVED) {
+            kprintf("Reserved memory: 0x%llx - 0x%llx (%llu bytes)\n", base_addr, base_addr + length - 1, length);
+        } else {
+            kprintf("Other memory type: 0x%llx - 0x%llx (%llu bytes)\n", base_addr, base_addr + length - 1, length);
         }
 
-        i += me->size + sizeof(uint32_t);
+        mmap = (multiboot_memory_map_t*)((uint32_t)mmap + mmap->size + sizeof(uint32_t));
     }
-
-    /* FIXME: CURRENTLY WRONG??? */
-    puts("Kernel size: ");
-    itoa((mbi->mem_upper - mbi->mem_lower + KERNEL_START) / 1000, buf, 10);
-    puts(buf);
-    puts("KB\n");
-    puts("Total Ram: ");
-    itoa((total_bytes_ram) / 1000000, buf, 10); /* converts to MB */
-    puts(buf);
-    puts("MB\n");
-    curr_free_mem = mbi->mem_upper - mbi->mem_lower + KERNEL_START;
 }

@@ -12,6 +12,7 @@ size_t strlen(const char* str);
 int get_int_len(int value);
 int kstrcmp(char s1[], char s2[]);
 char* kstrcat(char *a, char *b);
-void kprintf(const char* format, ...);
+int kprintf(char* fmt, ...);
+int ksprintf(char *buf, char *fmt, ...);
 
 #endif

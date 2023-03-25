@@ -57,7 +57,7 @@ run_shell(multiboot_info_t* mbi)
                 get_date_string(date);
                 kprintf("%s\n", date);
             } else if (!kstrcmp(shell_buf, "memmap")) {
-                print_mmap(mbi);
+                parse_multiboot_mmap(mbi);
             } else if (!kstrcmp(shell_buf, "memused")) {
                 char buf[32] = {0};
                 itoa(pmm_get_used_memory(), buf, 10);
@@ -100,7 +100,6 @@ kernel_main(multiboot_info_t* mbi, uint32_t magic)
     irq_install();
     timer_install();
     keyboard_install();
-    print_mmap(mbi); /* This currently is needed to init free mem */
     disable_blinking();
     clear_screen();
     pmm_init();
