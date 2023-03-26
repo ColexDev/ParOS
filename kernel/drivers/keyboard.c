@@ -67,10 +67,6 @@ static char keycodes_shift[128] = {
     0,                                                                                                                                    /* F12 Key */
     0,                                                                                                                                    /* All other keys are undefined */
 };
-/* TODO:
- * Vim Mode
- * Buffer so backspace works correctly
- * Handle ALL keys correctly including shifts */
 
 char
 getchar()
@@ -160,6 +156,7 @@ keyboard_handler(struct registers* regs)
     } else {
         switch (scancode) {
             case 0x01: /* Escape */
+                /* FIXME: Get rid of this, handle the vim mode internally in the shell */
                 esc_pressed = !esc_pressed;
                 break;
             case 0x1d: /* Right Control */

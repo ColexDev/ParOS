@@ -33,6 +33,7 @@ run_shell(multiboot_info_t* mbi)
     for (;;) {
         char c = 0;
 
+        /* TODO: Create fgets function */
         while (!c) {
             c = getchar();
         }

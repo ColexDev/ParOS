@@ -105,6 +105,54 @@ kstrcmp(char s1[], char s2[])
     return s1[i] - s2[i];
 }
 
+char*
+strtok(char* str, const char* delim)
+{
+    static char* current_str = NULL;
+    char* token;
+    const char* d;
+    uint8_t found_delim = 0;
+
+    if (str != NULL)
+    {
+        current_str = str;
+    }
+
+    token = current_str;
+
+    while (*current_str)
+    {
+        d = delim;
+
+        while (*d)
+        {
+            if (*current_str == *d)
+            {
+                *current_str++ = '\0';
+                found_delim = 1;
+
+                break;
+            }
+
+            d++;
+        }
+
+        if (found_delim)
+        {
+            break;
+        }
+
+        current_str++;
+    }
+
+    if (found_delim && *token != '\0')
+    {
+        return token;
+    }
+
+    return NULL;
+}
+
 // void
 // kprintf(const char* format, ...)
 // {
