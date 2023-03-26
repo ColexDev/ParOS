@@ -22,10 +22,10 @@ ParOS is a hobby operating system that I am working on to learn operating system
 - [x] Keyboard driver
 - [x] Physical memory management
 - [x] Virtual memory management (paging)
-- [] Heap (malloc and free)
-- [] Multiprocessing
-- [] Filesystem
-- [] Shell
+- [ ] Heap (malloc and free)
+- [ ] Multiprocessing
+- [ ] Filesystem
+- [ ] Shell
 
 ## Name
 The name comes from the small greek island [Paros](https://en.wikipedia.org/wiki/Paros).
