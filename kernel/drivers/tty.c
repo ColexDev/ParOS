@@ -3,6 +3,7 @@
 #include "vga.h"
 #include "tty.h"
 #include "cmos.h"
+#include "../timer/timer.h"
 #include "../stdlib/util.h"
 #include "../io/port_io.h"
 
@@ -31,6 +32,9 @@ get_current_tty()
     return current_tty;
 }
 
+/* FIXME: This is poorly written, write to the buffers themselves
+ *        and flush them to video memory instead, that allows 
+ *        data to be written to a virtual tty that is not active */
 void
 switch_tty(uint8_t tty)
 {
@@ -60,51 +64,41 @@ switch_tty(uint8_t tty)
     update_cursor();
 }
 
-/* FIX: Change this to edit video memory directly */
 void
 print_header()
 {
-    // uint8_t old_x = terminal_column;
-    // uint8_t old_y = terminal_row;
-
-    move_cursor(0, 0);
-    // uint32_t mem_used = curr_free_mem - FREE_MEM_START;
-    /* Set to white background */
-    terminal_setcolor(vga_entry_color(VGA_COLOR_BLACK, VGA_COLOR_WHITE));
-    puts("ParOS");
-    if (current_tty == 1) {
-        puts(" [1] 2 3");
-    } else if (current_tty == 2) {
-        puts(" 1 [2] 3");
-    } else if (current_tty == 3) {
-        puts(" 1 2 [3]");
-    }
-    /* 20 is the length of the memory usage string.
-     * This makes the top bar white and leaves enough room 
-     * for displaying memory used.
-     * TODO: Make tty driver better to avoid stuff like this */
-    // for (int i = 5; i < (VGA_WIDTH - 20 - get_int_len(mem_used)); i++) {
-    for (int i = 13; i < (VGA_WIDTH - 16); i++) {
-        // terminal_putentryat(' ', vga_entry_color(VGA_COLOR_BLACK, VGA_COLOR_WHITE), i, 0);
-        puts(" ");
+    /* Make entire top bar white */
+    for (size_t i = 0; i < VGA_WIDTH; i++) {
+        terminal_putentryat(' ', vga_entry_color(VGA_COLOR_BLACK, VGA_COLOR_WHITE), i, 0);
     }
 
-    print_date();
-    puts(" ");
-    print_time();
-    // move_cursor(0, VGA_HEIGHT - 1);
-    // for (int i = 0; i < VGA_WIDTH - 1; i++) {
-    //     puts(" ");
-    // }
-    // move_cursor(0, 1);
-    // puts("Memory Usage: ");
-    // puts(itoa(mem_used, 10));
-    // puts(" bytes");
-    // puts("\n\n");
+    /* Print OS name in upper left corner */
+    const char* os_name = "ParOS";
 
-    /* Set back to default */
-    terminal_setcolor(vga_entry_color(VGA_COLOR_WHITE, VGA_COLOR_BLACK));
-    // move_cursor(old_x, old_y);
+    for (size_t i = 0; i < strlen(os_name); i++) {
+        terminal_putentryat(os_name[i], vga_entry_color(VGA_COLOR_BLACK, VGA_COLOR_WHITE), i, 0);
+    }
+
+    /* Print time in upper right corner */
+    char time_str[9];
+    char date_str[9];
+
+    get_time_string(time_str);
+    get_date_string(date_str);
+
+    /* - 1 allows space for a space between the date and time */
+    size_t time_x_pos = VGA_WIDTH - strlen(time_str) - 1;
+    size_t date_x_pos = VGA_WIDTH - strlen(time_str) - strlen(date_str) - 1;
+
+    /* Print new date */
+    for (size_t i = 0; i < strlen(time_str) + strlen(date_str); i++) {
+        terminal_putentryat(date_str[i], vga_entry_color(VGA_COLOR_BLACK, VGA_COLOR_WHITE), date_x_pos + i, 0);
+    }
+
+    /* Print new time. Starts at 1 to leave a space between date and time */
+    for (size_t i = 1; i < strlen(time_str) + 1; i++) {
+        terminal_putentryat(time_str[i - 1], vga_entry_color(VGA_COLOR_BLACK, VGA_COLOR_WHITE), time_x_pos + i, 0);
+    } 
 }
 
 void

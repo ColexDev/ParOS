@@ -1,8 +1,7 @@
 #include "../io/port_io.h"
 #include "../stdlib/util.h"
-#include "tty.h"
 
-#define CURRENT_YEAR        2023                            // Change this each year!
+#define CURRENT_YEAR 2023                                   // Change this each year!
 
 int century_register = 0x00;                                // Set by ACPI table parsing code if possible
 
@@ -109,53 +108,70 @@ void read_rtc() {
 }
 
 void
-print_date()
+get_date_string(char* date_str)
 {
     char buf[5];
     read_rtc();
 
-    /* Date */
+    memset(buf, 0, 5);
+    memset(date_str, 0, strlen(date_str));
+
     itoa(year, buf, 10);
-    puts(buf);
-    puts("-");
+    kstrcat(date_str, buf);
+    kstrcat(date_str, "-");
+
     itoa(month, buf, 10);
     /* Pads month with a 0 */
     if (strlen(buf) == 1) {
         buf[1] = buf[0];
         buf[0] = '0';
     }
-    puts(buf);
-    puts("-");
+    kstrcat(date_str, buf);
+    kstrcat(date_str, "-");
+
     itoa(day, buf, 10);
     /* Pads day with a 0 */
     if (strlen(buf) == 1) {
         buf[1] = buf[0];
         buf[0] = '0';
     }
-    puts(buf);
+    kstrcat(date_str, buf);
 }
+
 void
-print_time()
+get_time_string(char* time_str)
 {
     char buf[5];
     read_rtc();
 
     memset(buf, 0, 5);
-    /* Time */
-    itoa(hour, buf, 10);
+    memset(time_str, 0, strlen(time_str));
+
+    /* My system clock is broken, -4 is just for me until I fix it :( */
+    itoa(hour - 4, buf, 10);
     /* Pads hour with a 0 */
     if (strlen(buf) == 1) {
         buf[1] = buf[0];
         buf[0] = '0';
     }
-    puts(buf);
-    puts(":");
+    kstrcat(time_str, buf);
+    kstrcat(time_str, ":");
+
     itoa(minute, buf, 10);
     /* Pads minute with a 0 */
     if (strlen(buf) == 1) {
         buf[1] = buf[0];
         buf[0] = '0';
     }
-    puts(buf);
+    kstrcat(time_str, buf);
+    kstrcat(time_str, ":");
 
+    itoa(second, buf, 10);
+    /* Pads minute with a 0 */
+    if (strlen(buf) == 1) {
+        buf[1] = buf[0];
+        buf[0] = '0';
+    }
+
+    kstrcat(time_str, buf);
 }

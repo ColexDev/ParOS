@@ -12,8 +12,7 @@
 #define WORD_LENGTH            0x8
 #define SIZE_OF_BITMAP         MAX_NUM_OF_PAGE_FRAMES / WORD_LENGTH
 #define KERNEL_START           0x100000  /* 1 MiB */
-#define PAGE_FRAME_SIZE        0x1000    /* 4 KiB */
-#define RESERVED_FOR_KERNEL    0x6400000 /* 100 MiB */
+#define PAGE_FRAME_SIZE        4096      /* 4 KiB */
 
 #define WORD_OFFSET(b) ((b) / WORD_LENGTH)
 #define BIT_OFFSET(b)  ((b) % WORD_LENGTH)
@@ -25,6 +24,7 @@ uint32_t pmm_get_reserved_memory();
 void pmm_set_frame(uint32_t frame);
 void pmm_clear_frame(uint32_t frame);
 uint32_t pmm_find_free_frame();
+uint32_t pmm_find_free_frames(uint32_t num_frames);
 void* pmm_alloc_frame();
 
 #endif /* #ifndef PMM_H */

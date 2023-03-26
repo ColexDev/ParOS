@@ -54,6 +54,32 @@ pmm_get_frame(uint32_t frame)
     return ret != 0;
 }
 
+uint32_t
+pmm_find_free_frames(uint32_t num_frames)
+{
+    uint32_t start_bit  = 0;
+    uint32_t free_frames = 0;
+
+    /* Goes through each individual bit */
+    for (uint32_t i = 0; i < SIZE_OF_BITMAP * 8; i++) {
+        /* The frame is already taken */
+        if (pmm_get_frame(i)) {
+            start_bit = i + 1;
+            free_frames = 0;
+            continue;
+        }
+
+        free_frames++;
+
+        /* Found it! */
+        if (free_frames == num_frames) {
+            return (WORD_OFFSET(start_bit) << 3) + BIT_OFFSET(start_bit);
+        }
+    }
+
+    return 0;
+}
+
 /* Returns the first free page frame */
 uint32_t
 pmm_find_free_frame()
@@ -62,15 +88,16 @@ pmm_find_free_frame()
         uint8_t byte = bitmap[i];
 
         /* Move on if no 0 bits in byte */
-        if (byte == 255)
+        if (byte == 0xFF)
             continue;
 
-        /* Get rightmost 0 bit (free page) */
+        /* Get rightmost 0 bit (free frame) */
         uint8_t offset = __builtin_ctz(~byte);
 
-        /* Finds the page number */
+        /* Finds the frame number */
         return i * WORD_LENGTH + offset;
     }
+
     return 0;
 }
 
