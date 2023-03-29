@@ -83,8 +83,6 @@ print_header()
     /* Print time in upper right corner */
     char time_str[9];
     char date_str[9];
-    memset(time_str, 0 , 9);
-    memset(date_str, 0 , 9);
 
     get_time_string(time_str);
     get_date_string(date_str);
@@ -94,14 +92,14 @@ print_header()
     size_t date_x_pos = VGA_WIDTH - strlen(time_str) - strlen(date_str) - 1;
 
     /* Print new date */
-    // for (size_t i = 0; i < strlen(time_str) + strlen(date_str); i++) {
-    //     terminal_putentryat(date_str[i], vga_entry_color(VGA_COLOR_BLACK, VGA_COLOR_WHITE), date_x_pos + i, 0);
-    // }
-    //
-    // /* Print new time. Starts at 1 to leave a space between date and time */
-    // for (size_t i = 1; i < strlen(time_str) + 1; i++) {
-    //     terminal_putentryat(time_str[i - 1], vga_entry_color(VGA_COLOR_BLACK, VGA_COLOR_WHITE), time_x_pos + i, 0);
-    // } 
+    for (size_t i = 0; i < strlen(time_str) + strlen(date_str); i++) {
+        terminal_putentryat(date_str[i], vga_entry_color(VGA_COLOR_BLACK, VGA_COLOR_WHITE), date_x_pos + i, 0);
+    }
+
+    /* Print new time. Starts at 1 to leave a space between date and time */
+    for (size_t i = 1; i < strlen(time_str) + 1; i++) {
+        terminal_putentryat(time_str[i - 1], vga_entry_color(VGA_COLOR_BLACK, VGA_COLOR_WHITE), time_x_pos + i, 0);
+    } 
 }
 
 void
@@ -114,7 +112,6 @@ terminal_initialize(void)
     /* Sets the hardware cursor to be a block instead of underscore*/
     outb(0x3D4, 0xa);
     outb(0x3D5, 0x0);
-    clear_screen();
 }
 
 void
@@ -274,4 +271,16 @@ void
 move_cursor_right(int num)
 {
     move_cursor(terminal_column += num, terminal_row);
+}
+
+uint8_t
+get_cursor_x()
+{
+    return terminal_column;
+}
+
+uint8_t
+get_cursor_y()
+{
+    return terminal_row;
 }

@@ -28,8 +28,10 @@ void
 run_shell(multiboot_info_t* mbi)
 {
     char shell_buf[50] = {0};
+    uint8_t prompt_start = 0;
 
     puts("$ ");
+    prompt_start = get_cursor_x();
 
     for (;;) {
         char c = 0;
@@ -78,6 +80,9 @@ run_shell(multiboot_info_t* mbi)
             memset(shell_buf, 0, strlen(shell_buf));
             puts("$ ");
         } else if (c == 8) { /* Backspace */
+            /* Cannot delete prompt */
+            if (get_cursor_x() == prompt_start)
+                continue;
             shell_buf[strlen(shell_buf) - 1] = '\0';
             delch();
         } else if (c) {

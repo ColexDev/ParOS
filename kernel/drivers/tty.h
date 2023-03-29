@@ -24,5 +24,7 @@ void print_header();
 void switch_tty(uint8_t tty);
 void terminal_putentryat(char c, uint8_t color, size_t x, size_t y);
 uint8_t get_current_tty();
+uint8_t get_cursor_x();
+uint8_t get_cursor_y();
 
 #endif

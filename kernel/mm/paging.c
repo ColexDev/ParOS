@@ -20,10 +20,22 @@ map_page(uint32_t virt, uint32_t phys)
         create_page_table(virt);
     }
 
+    if (phys == 0) {
+        phys = pmm_find_free_frame() * 0x1000;
+    }
+
+    kprintf("ACCESSING PAGE TABLE WITH VIRT: 0x%x and PHYS 0x%x\n", virt, phys);
+    /* FIXME: PAGE FAULT HAPPENING HERE WHEN I DON'T ALLOC THE FIRST PAGE (0) */
     page_table = (uint32_t*)(kernel_pdir[PAGE_DIRECTORY_INDEX(virt)] & PAGE_TABLE_ADDRESS_MASK);
 
-    pmm_set_frame(phys / 0x1000);
+    /* here I am just mapping, not necessarily using the memory, so I think I
+     * should not set it used here */
 
+    kprintf("ALLOCING with VIRT: 0x%x and PHYS: 0x%x\n", virt, phys);
+    pmm_set_frame(phys / 0x1000);
+    used_memory += 4096;
+
+    kprintf("Putting entry in table with VIRT: 0x%x and PHYS: 0x%x\n", virt, phys);
     page_table[PAGE_TABLE_INDEX(virt)] = phys | 3;
 }
 
@@ -60,6 +72,7 @@ create_page_table(uint32_t virt)
 {
     uint32_t new_table = pmm_find_free_frame();
     pmm_set_frame(new_table);
+    kprintf("NEW TABLE: 0x%x\n", new_table * 0x1000);
 
     kernel_pdir[PAGE_DIRECTORY_INDEX(virt)] = (new_table & PAGE_TABLE_ADDRESS_MASK) | 3;
 
@@ -157,11 +170,6 @@ init_paging()
         kernel_pdir[i] = 2; // attribute set to: supervisor level, read/write, not present(010 in binary)
     }
 
-    /* Identity maps the first 4 MiB of memory */
-    uint32_t page = 0;
-    uint32_t virt = 0;
-    uint32_t phys = 0;
-
     /* This is currently mapping KERNEL_VIRT_BASE to virtual address 0 since it is
      * the first entry in the page table 
      * REMEMBER: The goal is to map VIRTUAL ADDRESS 0xC0000000 to PHYSICAL address 0.
@@ -169,24 +177,43 @@ init_paging()
      * script, but we also want stuff like the VGA buffer (PHYHS 0xB8000) to be part
      * of the kernel mapping.
      * I should create a function to map virtual addresses to physical addresses */
-    kernel_pdir[0] = (uint32_t)first_page_table | 3;
-    // kernel_pdir[PAGE_DIRECTORY_INDEX(KERNEL_VIRT_BASE)] = (uint32_t)first_page_table | 3;
-    map_page(0, 0);
-    // for (int i = 0; i < 1024; i++) {
-    //     page = 0; /* overwrite past flags */
-    //     virt = (i * 0x1000) + KERNEL_VIRT_BASE;
-    //     phys = (i * 0x1000);
-    //     // alloc_page(&page, 1, 1);
-    //     // first_page_table[PAGE_TABLE_INDEX(virt)] = page;
-    //     map_page(virt, phys);
-    // }
 
-    /* Sets first page table in the page directory */
-    // kernel_pdir[0] = (uint32_t)first_page_table | 3;
-    // kernel_pdir[PAGE_DIRECTORY_INDEX(KERNEL_VIRT_BASE)] = (uint32_t)first_page_table | 3;
+    /* Identity map first 4 MiB of memory */
+    // kernel_pdir[1023] = (uint32_t)kernel_pdir | 3;
+    kernel_pdir[0] = (uint32_t)first_page_table | 3;
+    for (int i = 0; i < 1024; i++) {
+        map_page(i * 0x1000, i * 0x1000);
+    }
+    kprintf("BEFORE: First page table 0x%x\n Second page table 0x%x\n", &kernel_pdir[0], &kernel_pdir[768]);
+
     enable_paging();
 
-    // char buf[128];
+    /* FIXME:
+     * Make a specific area of virtual memory set aside for page structures so
+     * that it won't get overwritten by anything else. Basically just make a 
+     * whole map of where all kernel data structures get reserved space to. And
+     * don't give out those addresses
+     * Only needs to be 4 MiB, so it can be from 0xC0000000 - 0xC0400000*/
+
+    /* TESTING */
+    map_page(0xC0000000, 0);
+    map_page(0xE0000000, 0);
+    map_page(0xF0000000, 0);
+    uint32_t* arr = (uint32_t*)0xC0000000;
+    arr[0] = 5;
+    arr[1] = 4;
+    arr[2] = 3;
+    arr[3] = 2;
+    arr[4] = 1;
+    for (int i = 0; i < 5; i++) {
+        kprintf("arr[%d] = %d\n", i, arr[i]);
+    }
+
+    kprintf("AFTER: First page table 0x%x\n Second page table 0x%x\n", &kernel_pdir[0], &kernel_pdir[1]);
+    kprintf("First table addy 0x%x\n", &first_page_table);
+
+
+    // char buf[16];
     // itoa(get_page(0x1000 * 1023, 1), buf, 16);
     // puts("Page: 0x");
     // puts(buf);
