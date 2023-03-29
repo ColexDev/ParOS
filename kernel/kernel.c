@@ -20,6 +20,7 @@ void crash_me();
 void kernel_panic();
 void disable_blinking();
 extern uint64_t kernel_end;
+extern uint64_t kernel_start;
 
 uint32_t curr_free_mem;
 
@@ -93,7 +94,6 @@ kernel_main(multiboot_info_t* mbi, uint32_t magic)
     if (magic != MULTIBOOT_BOOTLOADER_MAGIC)
         kernel_panic();
 
-    /* Initialize terminal interface */
     terminal_initialize();
     gdt_install();
     idt_install();
@@ -104,11 +104,12 @@ kernel_main(multiboot_info_t* mbi, uint32_t magic)
     disable_blinking();
     clear_screen();
     pmm_init();
-
-    kprintf("Kernel Size: %d bytes\n", &kernel_end - (uint64_t*)0x100000);
-
+    print_header();
     init_paging();
-    run_shell(mbi);
+
+    // kprintf("Kernel Size: %d bytes\n", &kernel_end - &kernel_start);
+
+    // run_shell(mbi);
 
     // print_header();
     // delay(1000);

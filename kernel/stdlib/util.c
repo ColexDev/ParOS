@@ -113,21 +113,17 @@ strtok(char* str, const char* delim)
     const char* d;
     uint8_t found_delim = 0;
 
-    if (str != NULL)
-    {
+    if (str != NULL) {
         current_str = str;
     }
 
     token = current_str;
 
-    while (*current_str)
-    {
+    while (*current_str) {
         d = delim;
 
-        while (*d)
-        {
-            if (*current_str == *d)
-            {
+        while (*d) {
+            if (*current_str == *d) {
                 *current_str++ = '\0';
                 found_delim = 1;
 
@@ -137,386 +133,337 @@ strtok(char* str, const char* delim)
             d++;
         }
 
-        if (found_delim)
-        {
+        if (found_delim) {
             break;
         }
 
         current_str++;
     }
 
-    if (found_delim && *token != '\0')
-    {
+    if (found_delim && *token != '\0') {
         return token;
     }
 
     return NULL;
 }
 
-// void
-// kprintf(const char* format, ...)
-// {
-//     va_list args;
-//     va_start(args, format);
-//
-//     while (*format) {
-//         if (*format == '%') {
-//             format++;
-//             if (*format == 'd' || *format == 'i') {
-//                 int value = va_arg(args, int64_t);
-//                 char buffer[32] = {0};
-//                 itoa(value, buffer, 10);
-//                 puts(buffer);
-//             } else if (*format == 'u') {
-//                 unsigned int value = va_arg(args, uint64_t);
-//                 char buffer[32] = {0};
-//                 itoa(value, buffer, 10);
-//                 puts(buffer);
-//             } else if (*format == 'x' || *format == 'X') {
-//                 unsigned int value = va_arg(args, uint64_t);
-//                 char buffer[32] = {0};
-//                 itoa(value, buffer, 16);
-//                 puts(buffer);
-//             } else if (*format == 's') {
-//                 char* str = va_arg(args, char*);
-//                 puts(str);
-//             } else if (*format == 'c') {
-//                 char c = (char)va_arg(args, int32_t);
-//                 putch(c);
-//             } else if (*format == 'p') {
-//                 unsigned long value = va_arg(args, uint64_t);
-//                 char buffer[32] = {0};
-//                 itoa(value, buffer, 16);
-//                 puts("0x");
-//                 puts(buffer);
-//             } else {
-//                 putch('%');
-//                 putch(*format);
-//             }
-//         } else {
-//             putch(*format);
-//         }
-//         format++;
-//     }
-//
-//     va_end(args);
-// }
-
 /* Taken from https://github.com/mpredfearn/simple-printf */
-static void simple_outputch(char **str, char c)
+static void
+simple_outputch(char **str, char c)
 {
-	if (str) {
-		**str = c;
-		++(*str);
-	} else {
-		putch(c);
-	}
+    if (str) {
+        **str = c;
+        ++(*str);
+    } else {
+        putch(c);
+    }
 }
 
 enum flags {
-	PAD_ZERO	= 1,
-	PAD_RIGHT	= 2,
+    PAD_ZERO	= 1,
+    PAD_RIGHT	= 2,
 };
 
-static int prints(char **out, const char *string, int width, int flags)
+static int
+prints(char **out, const char *string, int width, int flags)
 {
-	int pc = 0, padchar = ' ';
+    int pc = 0, padchar = ' ';
 
-	if (width > 0) {
-		int len = 0;
-		const char *ptr;
-		for (ptr = string; *ptr; ++ptr) ++len;
-		if (len >= width) width = 0;
-		else width -= len;
-		if (flags & PAD_ZERO)
-			padchar = '0';
-	}
-	if (!(flags & PAD_RIGHT)) {
-		for ( ; width > 0; --width) {
-			simple_outputch(out, padchar);
-			++pc;
-		}
-	}
-	for ( ; *string ; ++string) {
-		simple_outputch(out, *string);
-		++pc;
-	}
-	for ( ; width > 0; --width) {
-		simple_outputch(out, padchar);
-		++pc;
-	}
+    if (width > 0) {
+        int len = 0;
+        const char *ptr;
+        for (ptr = string; *ptr; ++ptr) ++len;
+        if (len >= width) width = 0;
+        else width -= len;
+        if (flags & PAD_ZERO)
+            padchar = '0';
+    }
+    if (!(flags & PAD_RIGHT)) {
+        for ( ; width > 0; --width) {
+            simple_outputch(out, padchar);
+            ++pc;
+        }
+    }
+    for ( ; *string ; ++string) {
+        simple_outputch(out, *string);
+        ++pc;
+    }
+    for ( ; width > 0; --width) {
+        simple_outputch(out, padchar);
+        ++pc;
+    }
 
-	return pc;
+    return pc;
 }
 
 #define PRINT_BUF_LEN 64
 
-static int simple_outputi(char **out, long long i, int base, int sign, int width, int flags, int letbase)
+static int
+simple_outputi(char **out, long long i, int base, int sign, int width, int flags, int letbase)
 {
-	char print_buf[PRINT_BUF_LEN];
-	char *s;
-	int t, neg = 0, pc = 0;
-	unsigned long long u = i;
+    char print_buf[PRINT_BUF_LEN];
+    char *s;
+    int t, neg = 0, pc = 0;
+    unsigned long long u = i;
 
-	if (i == 0) {
-		print_buf[0] = '0';
-		print_buf[1] = '\0';
-		return prints(out, print_buf, width, flags);
-	}
+    if (i == 0) {
+        print_buf[0] = '0';
+        print_buf[1] = '\0';
+        return prints(out, print_buf, width, flags);
+    }
 
-	if (sign && base == 10 && i < 0) {
-		neg = 1;
-		u = -i;
-	}
+    if (sign && base == 10 && i < 0) {
+        neg = 1;
+        u = -i;
+    }
 
-	s = print_buf + PRINT_BUF_LEN-1;
-	*s = '\0';
+    s = print_buf + PRINT_BUF_LEN-1;
+    *s = '\0';
 
-	while (u) {
-		t = u % base;
-		if( t >= 10 )
-			t += letbase - '0' - 10;
-		*--s = t + '0';
-		u /= base;
-	}
+    while (u) {
+        t = u % base;
+        if( t >= 10 )
+            t += letbase - '0' - 10;
+        *--s = t + '0';
+        u /= base;
+    }
 
-	if (neg) {
-		if( width && (flags & PAD_ZERO) ) {
-			simple_outputch (out, '-');
-			++pc;
-			--width;
-		}
-		else {
-			*--s = '-';
-		}
-	}
+    if (neg) {
+        if( width && (flags & PAD_ZERO) ) {
+            simple_outputch (out, '-');
+            ++pc;
+            --width;
+        } else {
+            *--s = '-';
+        }
+    }
 
-	return pc + prints (out, s, width, flags);
+    return pc + prints (out, s, width, flags);
 }
 
 
-static int simple_vsprintf(char **out, char *format, va_list ap)
+static int
+simple_vsprintf(char **out, char *format, va_list ap)
 {
-	int width, flags;
-	int pc = 0;
-	char scr[2];
-	union {
-		char c;
-		char *s;
-		int i;
-		unsigned int u;
-		long li;
-		unsigned long lu;
-		long long lli;
-		unsigned long long llu;
-		short hi;
-		unsigned short hu;
-		signed char hhi;
-		unsigned char hhu;
-		void *p;
-	} u;
+    int width, flags;
+    int pc = 0;
+    char scr[2];
+    union {
+        char c;
+        char *s;
+        int i;
+        unsigned int u;
+        long li;
+        unsigned long lu;
+        long long lli;
+        unsigned long long llu;
+        short hi;
+        unsigned short hu;
+        signed char hhi;
+        unsigned char hhu;
+        void *p;
+    } u;
 
-	for (; *format != 0; ++format) {
-		if (*format == '%') {
-			++format;
-			width = flags = 0;
-			if (*format == '\0')
-				break;
-			if (*format == '%')
-				goto out;
-			if (*format == '-') {
-				++format;
-				flags = PAD_RIGHT;
-			}
-			while (*format == '0') {
-				++format;
-				flags |= PAD_ZERO;
-			}
-			if (*format == '*') {
-				width = va_arg(ap, int);
-				format++;
-			} else {
-				for ( ; *format >= '0' && *format <= '9'; ++format) {
-					width *= 10;
-					width += *format - '0';
-				}
-			}
-			switch (*format) {
-				case('d'):
-					u.i = va_arg(ap, int);
-					pc += simple_outputi(out, u.i, 10, 1, width, flags, 'a');
-					break;
+    for (; *format != 0; ++format) {
+        if (*format == '%') {
+            ++format;
+            width = flags = 0;
+            if (*format == '\0')
+                break;
+            if (*format == '%')
+                goto out;
+            if (*format == '-') {
+                ++format;
+                flags = PAD_RIGHT;
+            }
+            while (*format == '0') {
+                ++format;
+                flags |= PAD_ZERO;
+            }
+            if (*format == '*') {
+                width = va_arg(ap, int);
+                format++;
+            } else {
+                for ( ; *format >= '0' && *format <= '9'; ++format) {
+                    width *= 10;
+                    width += *format - '0';
+                }
+            }
+            switch (*format) {
+                case('d'):
+                    u.i = va_arg(ap, int);
+                    pc += simple_outputi(out, u.i, 10, 1, width, flags, 'a');
+                    break;
 
-				case('u'):
-					u.u = va_arg(ap, unsigned int);
-					pc += simple_outputi(out, u.u, 10, 0, width, flags, 'a');
-					break;
+                case('u'):
+                    u.u = va_arg(ap, unsigned int);
+                    pc += simple_outputi(out, u.u, 10, 0, width, flags, 'a');
+                    break;
 
-				case('x'):
-					u.u = va_arg(ap, unsigned int);
-					pc += simple_outputi(out, u.u, 16, 0, width, flags, 'a');
-					break;
+                case('x'):
+                    u.u = va_arg(ap, unsigned int);
+                    pc += simple_outputi(out, u.u, 16, 0, width, flags, 'a');
+                    break;
 
-				case('X'):
-					u.u = va_arg(ap, unsigned int);
-					pc += simple_outputi(out, u.u, 16, 0, width, flags, 'A');
-					break;
+                case('X'):
+                    u.u = va_arg(ap, unsigned int);
+                    pc += simple_outputi(out, u.u, 16, 0, width, flags, 'A');
+                    break;
 
-				case('c'):
-					u.c = va_arg(ap, int);
-					scr[0] = u.c;
-					scr[1] = '\0';
-					pc += prints(out, scr, width, flags);
-					break;
+                case('c'):
+                    u.c = va_arg(ap, int);
+                    scr[0] = u.c;
+                    scr[1] = '\0';
+                    pc += prints(out, scr, width, flags);
+                    break;
 
-				case('s'):
-					u.s = va_arg(ap, char *);
-					pc += prints(out, u.s ? u.s : "(null)", width, flags);
-					break;
-				case('l'):
-					++format;
-					switch (*format) {
-						case('d'):
-							u.li = va_arg(ap, long);
-							pc += simple_outputi(out, u.li, 10, 1, width, flags, 'a');
-							break;
+                case('s'):
+                    u.s = va_arg(ap, char *);
+                    pc += prints(out, u.s ? u.s : "(null)", width, flags);
+                    break;
+                case('l'):
+                    ++format;
+                    switch (*format) {
+                        case('d'):
+                            u.li = va_arg(ap, long);
+                            pc += simple_outputi(out, u.li, 10, 1, width, flags, 'a');
+                            break;
 
-						case('u'):
-							u.lu = va_arg(ap, unsigned long);
-							pc += simple_outputi(out, u.lu, 10, 0, width, flags, 'a');
-							break;
+                        case('u'):
+                            u.lu = va_arg(ap, unsigned long);
+                            pc += simple_outputi(out, u.lu, 10, 0, width, flags, 'a');
+                            break;
 
-						case('x'):
-							u.lu = va_arg(ap, unsigned long);
-							pc += simple_outputi(out, u.lu, 16, 0, width, flags, 'a');
-							break;
+                        case('x'):
+                            u.lu = va_arg(ap, unsigned long);
+                            pc += simple_outputi(out, u.lu, 16, 0, width, flags, 'a');
+                            break;
 
-						case('X'):
-							u.lu = va_arg(ap, unsigned long);
-							pc += simple_outputi(out, u.lu, 16, 0, width, flags, 'A');
-							break;
+                        case('X'):
+                            u.lu = va_arg(ap, unsigned long);
+                            pc += simple_outputi(out, u.lu, 16, 0, width, flags, 'A');
+                            break;
 
-						case('l'):
-							++format;
-							switch (*format) {
-								case('d'):
-									u.lli = va_arg(ap, long long);
-									pc += simple_outputi(out, u.lli, 10, 1, width, flags, 'a');
-									break;
+                        case('l'):
+                            ++format;
+                            switch (*format) {
+                                case('d'):
+                                    u.lli = va_arg(ap, long long);
+                                    pc += simple_outputi(out, u.lli, 10, 1, width, flags, 'a');
+                                    break;
 
-								case('u'):
-									u.llu = va_arg(ap, unsigned long long);
-									pc += simple_outputi(out, u.llu, 10, 0, width, flags, 'a');
-									break;
+                                case('u'):
+                                    u.llu = va_arg(ap, unsigned long long);
+                                    pc += simple_outputi(out, u.llu, 10, 0, width, flags, 'a');
+                                    break;
 
-								case('x'):
-									u.llu = va_arg(ap, unsigned long long);
-									pc += simple_outputi(out, u.llu, 16, 0, width, flags, 'a');
-									break;
+                                case('x'):
+                                    u.llu = va_arg(ap, unsigned long long);
+                                    pc += simple_outputi(out, u.llu, 16, 0, width, flags, 'a');
+                                    break;
 
-								case('X'):
-									u.llu = va_arg(ap, unsigned long long);
-									pc += simple_outputi(out, u.llu, 16, 0, width, flags, 'A');
-									break;
+                                case('X'):
+                                    u.llu = va_arg(ap, unsigned long long);
+                                    pc += simple_outputi(out, u.llu, 16, 0, width, flags, 'A');
+                                    break;
 
-								default:
-									break;
-							}
-							break;
-						default:
-							break;
-					}
-					break;
-				case('h'):
-					++format;
-					switch (*format) {
-						case('d'):
-							u.hi = va_arg(ap, int);
-							pc += simple_outputi(out, u.hi, 10, 1, width, flags, 'a');
-							break;
+                                default:
+                                    break;
+                            }
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                case('h'):
+                    ++format;
+                    switch (*format) {
+                        case('d'):
+                            u.hi = va_arg(ap, int);
+                            pc += simple_outputi(out, u.hi, 10, 1, width, flags, 'a');
+                            break;
 
-						case('u'):
-							u.hu = va_arg(ap, unsigned int);
-							pc += simple_outputi(out, u.lli, 10, 0, width, flags, 'a');
-							break;
+                        case('u'):
+                            u.hu = va_arg(ap, unsigned int);
+                            pc += simple_outputi(out, u.lli, 10, 0, width, flags, 'a');
+                            break;
 
-						case('x'):
-							u.hu = va_arg(ap, unsigned int);
-							pc += simple_outputi(out, u.lli, 16, 0, width, flags, 'a');
-							break;
+                        case('x'):
+                            u.hu = va_arg(ap, unsigned int);
+                            pc += simple_outputi(out, u.lli, 16, 0, width, flags, 'a');
+                            break;
 
-						case('X'):
-							u.hu = va_arg(ap, unsigned int);
-							pc += simple_outputi(out, u.lli, 16, 0, width, flags, 'A');
-							break;
+                        case('X'):
+                            u.hu = va_arg(ap, unsigned int);
+                            pc += simple_outputi(out, u.lli, 16, 0, width, flags, 'A');
+                            break;
 
-						case('h'):
-							++format;
-							switch (*format) {
-								case('d'):
-									u.hhi = va_arg(ap, int);
-									pc += simple_outputi(out, u.hhi, 10, 1, width, flags, 'a');
-									break;
+                        case('h'):
+                            ++format;
+                            switch (*format) {
+                                case('d'):
+                                    u.hhi = va_arg(ap, int);
+                                    pc += simple_outputi(out, u.hhi, 10, 1, width, flags, 'a');
+                                    break;
 
-								case('u'):
-									u.hhu = va_arg(ap, unsigned int);
-									pc += simple_outputi(out, u.lli, 10, 0, width, flags, 'a');
-									break;
+                                case('u'):
+                                    u.hhu = va_arg(ap, unsigned int);
+                                    pc += simple_outputi(out, u.lli, 10, 0, width, flags, 'a');
+                                    break;
 
-								case('x'):
-									u.hhu = va_arg(ap, unsigned int);
-									pc += simple_outputi(out, u.lli, 16, 0, width, flags, 'a');
-									break;
+                                case('x'):
+                                    u.hhu = va_arg(ap, unsigned int);
+                                    pc += simple_outputi(out, u.lli, 16, 0, width, flags, 'a');
+                                    break;
 
-								case('X'):
-									u.hhu = va_arg(ap, unsigned int);
-									pc += simple_outputi(out, u.lli, 16, 0, width, flags, 'A');
-									break;
+                                case('X'):
+                                    u.hhu = va_arg(ap, unsigned int);
+                                    pc += simple_outputi(out, u.lli, 16, 0, width, flags, 'A');
+                                    break;
 
-								default:
-									break;
-							}
-							break;
-						default:
-							break;
-					}
-					break;
-				default:
-					break;
-			}
-		}
-		else {
-out:
-			simple_outputch (out, *format);
-			++pc;
-		}
-	}
-	if (out) **out = '\0';
-	return pc;
+                                default:
+                                    break;
+                            }
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                default:
+                    break;
+            }
+        } else {
+        out:
+            simple_outputch (out, *format);
+            ++pc;
+        }
+    }
+    if (out) **out = '\0';
+    return pc;
 }
 
 int
 kprintf(char* fmt, ...)
 {
-	va_list ap;
-	int r;
+    va_list ap;
+    int r;
 
-	va_start(ap, fmt);
-	r = simple_vsprintf(NULL, fmt, ap);
-	va_end(ap);
+    va_start(ap, fmt);
+    r = simple_vsprintf(NULL, fmt, ap);
+    va_end(ap);
 
-	return r;
+    return r;
 }
 
 int
 ksprintf(char *buf, char *fmt, ...)
 {
-	va_list ap;
-	int r;
+    va_list ap;
+    int r;
 
-	va_start(ap, fmt);
-	r = simple_vsprintf(&buf, fmt, ap);
-	va_end(ap);
+    va_start(ap, fmt);
+    r = simple_vsprintf(&buf, fmt, ap);
+    va_end(ap);
 
-	return r;
+    return r;
 }

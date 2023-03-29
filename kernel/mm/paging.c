@@ -11,41 +11,61 @@ uint32_t first_page_table[1024] __attribute__((aligned(PAGE_FRAME_SIZE)));
 
 extern uint32_t used_memory;
 
-extern void write_cr3(uint32_t*);
-extern void write_cr0(uint32_t);
-extern uint32_t read_cr0();
-
-/* HAVE TO MAP PAGE ALIGNED ADDRESSES */
-uint32_t
-map_page(uint32_t virt, uint8_t is_kernel, uint8_t is_writeable)
+void
+map_page(uint32_t virt, uint32_t phys)
 {
-    uint32_t page;
-    uint32_t table = kernel_pdir[PAGE_DIRECTORY_INDEX(virt)];
+    uint32_t* page_table;
 
-    // if (get_page(virt, 1) != 0)
-    //     return 0;
-
-    /* Table does not exist */
-    if (!(table & PAGE_PRESENT)) {
-        /* Create table */
-    } else {
-        /* Remove control bits, this gets the tables address */
-        table &= PAGE_TABLE_ADDRESS_MASK;
+    if (!(kernel_pdir[PAGE_DIRECTORY_INDEX(virt)] & 1)) {
+        create_page_table(virt);
     }
 
-    /* Allocate the page */
-    alloc_page(&page, is_kernel, is_writeable);
+    page_table = (uint32_t*)(kernel_pdir[PAGE_DIRECTORY_INDEX(virt)] & PAGE_TABLE_ADDRESS_MASK);
 
-    /* Put the page in the table */
-    ((uint32_t*)table)[PAGE_TABLE_INDEX(virt)] = page;
+    pmm_set_frame(phys / 0x1000);
 
-    /* Flush the TLB entry for the virtual address */
-    asm volatile("invlpg (%0)" ::"r" (virt) : "memory");
+    page_table[PAGE_TABLE_INDEX(virt)] = phys | 3;
 }
 
+/* HAVE TO MAP PAGE ALIGNED ADDRESSES */
+// uint32_t
+// map_page(uint32_t virt, uint32_t phys, uint8_t is_kernel, uint8_t is_writeable)
+// {
+//     uint32_t page;
+//     uint32_t table = kernel_pdir[PAGE_DIRECTORY_INDEX(virt)];
+//
+//     // if (get_page(virt, 1) != 0)
+//     //     return 0;
+//
+//     /* Table does not exist */
+//     if (!(table & PAGE_PRESENT)) {
+//         /* Create table */
+//     } else {
+//         /* Remove control bits, this gets the tables address */
+//         table &= PAGE_TABLE_ADDRESS_MASK;
+//     }
+//
+//     /* Allocate the page */
+//     alloc_page(&page, is_kernel, is_writeable);
+//
+//     /* Put the page in the table */
+//     ((uint32_t*)table)[PAGE_TABLE_INDEX(virt)] = page;
+//
+//     /* Flush the TLB entry for the virtual address */
+//     asm volatile("invlpg (%0)" ::"r" (virt) : "memory");
+// }
+
 void
-create_page_table()
+create_page_table(uint32_t virt)
 {
+    uint32_t new_table = pmm_find_free_frame();
+    pmm_set_frame(new_table);
+
+    kernel_pdir[PAGE_DIRECTORY_INDEX(virt)] = (new_table & PAGE_TABLE_ADDRESS_MASK) | 3;
+
+    for (int i = 0; i < 1024; i++) {
+        ((uint32_t*)new_table)[i] = 0;
+    }
 }
 
 /* This needs to return 0 if not present, or some special value */
@@ -83,10 +103,12 @@ get_page(uint32_t virt, uint8_t create)
 void
 alloc_page(uint32_t* page, uint8_t is_kernel, uint8_t is_writeable)
 {
+    uint32_t frame;
     if (GET_PAGE_FRAME(*page) != 0) /* Already alloced */
         return;
 
-    uint32_t frame = pmm_find_free_frame();
+    frame = pmm_find_free_frame();
+
     pmm_set_frame(frame);
 
     used_memory += PAGE_FRAME_SIZE;
@@ -137,14 +159,31 @@ init_paging()
 
     /* Identity maps the first 4 MiB of memory */
     uint32_t page = 0;
-    for (int i = 0; i < 1024; i++) {
-        page = 0; /* overwrite past flags */
-        alloc_page(&page, 1, 1);
-        first_page_table[i] = page;
-    }
+    uint32_t virt = 0;
+    uint32_t phys = 0;
+
+    /* This is currently mapping KERNEL_VIRT_BASE to virtual address 0 since it is
+     * the first entry in the page table 
+     * REMEMBER: The goal is to map VIRTUAL ADDRESS 0xC0000000 to PHYSICAL address 0.
+     * The kernel itself starts at PHYS 0x100000 (1 MiB) as specified in the linker
+     * script, but we also want stuff like the VGA buffer (PHYHS 0xB8000) to be part
+     * of the kernel mapping.
+     * I should create a function to map virtual addresses to physical addresses */
+    kernel_pdir[0] = (uint32_t)first_page_table | 3;
+    // kernel_pdir[PAGE_DIRECTORY_INDEX(KERNEL_VIRT_BASE)] = (uint32_t)first_page_table | 3;
+    map_page(0, 0);
+    // for (int i = 0; i < 1024; i++) {
+    //     page = 0; /* overwrite past flags */
+    //     virt = (i * 0x1000) + KERNEL_VIRT_BASE;
+    //     phys = (i * 0x1000);
+    //     // alloc_page(&page, 1, 1);
+    //     // first_page_table[PAGE_TABLE_INDEX(virt)] = page;
+    //     map_page(virt, phys);
+    // }
 
     /* Sets first page table in the page directory */
-    kernel_pdir[0] = (uint32_t)first_page_table | 3;
+    // kernel_pdir[0] = (uint32_t)first_page_table | 3;
+    // kernel_pdir[PAGE_DIRECTORY_INDEX(KERNEL_VIRT_BASE)] = (uint32_t)first_page_table | 3;
     enable_paging();
 
     // char buf[128];
