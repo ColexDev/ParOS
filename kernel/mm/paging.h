@@ -3,8 +3,13 @@
 #define PAGES_PER_TABLE 1024  /* 1 KiB */
 #define TABLES_PER_DIR  1024  /* 1 KiB */
 #define PAGE_SIZE       4096  /* 4 KiB */
-#define KERNEL_VIRT_BASE 0xC0000000
-#define KERNEL_PHYS_BASE 0x100000
+
+#define KERNEL_PHYS_BASE  0x100000
+#define KERNEL_VIRT_BASE  0xC0000000
+#define KERNEL_HEAP_START 0xE0000000
+#define KERNEL_HEAP_END   0xF0000000
+#define VMM_PAGE_TABLES   0xFFC00000
+#define VMM_PAGE_DIR      0xFFFFF000
 
 #define PAGE_DIRECTORY_INDEX(virt) (((virt) >> 22) & 0x3ff)
 #define PAGE_TABLE_INDEX(virt) (((virt) >> 12) & 0x3ff)
@@ -20,12 +25,6 @@
 
 #define CR0_PG_BIT 31
 #define PAGE_TABLE_ADDRESS_MASK ~0xFFF
-#define OFFSET_MASK ~0xFFF
-
-/* NOTES:
-    * A Page is a fixed sized unit of memory     (VIRTUAL memory)
-    * A Page is contained inside of a Page Frame (PHYSICAL memory)
-*/
 
 void init_paging();
 uint32_t get_page(uint32_t virt, uint8_t make);

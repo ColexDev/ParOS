@@ -10,13 +10,20 @@ uint32_t kernel_pdir[1024] __attribute__((aligned(PAGE_FRAME_SIZE)));
 uint32_t first_page_table[1024] __attribute__((aligned(PAGE_FRAME_SIZE)));
 
 extern uint32_t used_memory;
+uint8_t paging_enabled = 0;
 
 void
 map_page(uint32_t virt, uint32_t phys)
 {
-    uint32_t* page_table;
+    uint32_t* page_directory;
+    uint32_t page_table;
 
-    if (!(kernel_pdir[PAGE_DIRECTORY_INDEX(virt)] & 1)) {
+    if (paging_enabled)
+        page_directory = (uint32_t*)0xFFFFF000;
+    else
+        page_directory = kernel_pdir;
+
+    if (!(page_directory[PAGE_DIRECTORY_INDEX(virt)] & 1)) {
         create_page_table(virt);
     }
 
@@ -25,18 +32,17 @@ map_page(uint32_t virt, uint32_t phys)
     }
 
     kprintf("ACCESSING PAGE TABLE WITH VIRT: 0x%x and PHYS 0x%x\n", virt, phys);
-    /* FIXME: PAGE FAULT HAPPENING HERE WHEN I DON'T ALLOC THE FIRST PAGE (0) */
-    page_table = (uint32_t*)(kernel_pdir[PAGE_DIRECTORY_INDEX(virt)] & PAGE_TABLE_ADDRESS_MASK);
+    if (paging_enabled)
+        page_table = 0xFFC00000;
+    else 
+        page_table = (page_directory[PAGE_DIRECTORY_INDEX(virt)] & PAGE_TABLE_ADDRESS_MASK);
 
-    /* here I am just mapping, not necessarily using the memory, so I think I
-     * should not set it used here */
-
-    kprintf("ALLOCING with VIRT: 0x%x and PHYS: 0x%x\n", virt, phys);
+    // kprintf("ALLOCING with VIRT: 0x%x and PHYS: 0x%x | In table: 0x%x\n", virt, phys, page_table);
     pmm_set_frame(phys / 0x1000);
     used_memory += 4096;
 
-    kprintf("Putting entry in table with VIRT: 0x%x and PHYS: 0x%x\n", virt, phys);
-    page_table[PAGE_TABLE_INDEX(virt)] = phys | 3;
+    kprintf("Putting entry in table 0x%x with VIRT: 0x%x and PHYS: 0x%x\n", &((uint32_t*)page_table)[PAGE_TABLE_INDEX(virt)], virt, phys);
+    ((uint32_t*)page_table)[PAGE_TABLE_INDEX(virt)] = phys | 3;
 }
 
 /* HAVE TO MAP PAGE ALIGNED ADDRESSES */
@@ -70,11 +76,19 @@ map_page(uint32_t virt, uint32_t phys)
 void
 create_page_table(uint32_t virt)
 {
+    uint32_t* page_directory;
     uint32_t new_table = pmm_find_free_frame();
+
     pmm_set_frame(new_table);
+
+    if (paging_enabled)
+        page_directory = (uint32_t*)0xFFFFF000;
+    else
+        page_directory = kernel_pdir;
+
     kprintf("NEW TABLE: 0x%x\n", new_table * 0x1000);
 
-    kernel_pdir[PAGE_DIRECTORY_INDEX(virt)] = (new_table & PAGE_TABLE_ADDRESS_MASK) | 3;
+    page_directory[PAGE_DIRECTORY_INDEX(virt)] = (new_table * 0x1000) | 3;
 
     for (int i = 0; i < 1024; i++) {
         ((uint32_t*)new_table)[i] = 0;
@@ -86,31 +100,34 @@ uint32_t
 get_page(uint32_t virt, uint8_t create)
 {
     uint32_t page = 0;
-    /* NOTE: THIS WILL BE 2 IF THE PAGE TABLE DOES NOT EXIST */
-    uint32_t table = kernel_pdir[PAGE_DIRECTORY_INDEX(virt)];
+    uint32_t* page_directory;
+    uint32_t page_table;
 
-    /* NOTE: I think I should only create tables in map_page() */
-    // if ((table == 2) && create) {
-    //     /* create table */
-    //     table = pmm_find_free_frame();
-    //     memset((void*)table, 0, PAGE_FRAME_SIZE);
-    //
-    //     kernel_pdir[PAGE_DIRECTORY_INDEX(virt)] = table | 3;
-    // } else {
-    //     table &= ~0xFFF;
-    // }
+    if (paging_enabled)
+        page_directory = (uint32_t*)0xFFFFF000;
+    else
+        page_directory = kernel_pdir;
 
-    table &= PAGE_TABLE_ADDRESS_MASK;
+    if (paging_enabled)
+        page_table = 0xFFC00000;
+    else 
+        page_table = (page_directory[PAGE_DIRECTORY_INDEX(virt)] & PAGE_TABLE_ADDRESS_MASK);
+    kprintf("GETTING PAGE FROM TABLE: 0x%x\n", &((uint32_t*)page_table)[PAGE_TABLE_INDEX(virt)]);
+
     /* Remove control bits, this gets the tables address */
+    page_table &= PAGE_TABLE_ADDRESS_MASK;
 
-    page = ((uint32_t*)table)[PAGE_TABLE_INDEX(virt)];
+    page = ((uint32_t*)page_table)[PAGE_TABLE_INDEX(virt)];
+    /* Remove control bits, this gets the pages address */
+    page &= PAGE_TABLE_ADDRESS_MASK;
+    kprintf("GOT PAGE: 0x%x FROM INDEX: %d\n", page, PAGE_TABLE_INDEX(virt));
 
     /* NOTE: Change this to check if the page is present or not once I fix the table code */
     /* If page is garbage (does not exist), return 0 */
-    if ((page >> 12) > 1023)
-        return 0;
-    else
-        return page;
+    // if ((page >> 12) > 1023)
+    //     return 0;
+    // else
+    return page;
 }
 
 void
@@ -160,6 +177,7 @@ enable_paging()
                   mov %0, %%cr0" 
                   : "=r"(cr0) 
                   : "i"((1 << CR0_PG_BIT)));
+    paging_enabled = 1;
 }
 
 void
@@ -176,46 +194,85 @@ init_paging()
      * The kernel itself starts at PHYS 0x100000 (1 MiB) as specified in the linker
      * script, but we also want stuff like the VGA buffer (PHYHS 0xB8000) to be part
      * of the kernel mapping.
-     * I should create a function to map virtual addresses to physical addresses */
 
     /* Identity map first 4 MiB of memory */
-    // kernel_pdir[1023] = (uint32_t)kernel_pdir | 3;
     kernel_pdir[0] = (uint32_t)first_page_table | 3;
+    kernel_pdir[1023] = ((uint32_t)kernel_pdir) | 3;
     for (int i = 0; i < 1024; i++) {
         map_page(i * 0x1000, i * 0x1000);
     }
-    kprintf("BEFORE: First page table 0x%x\n Second page table 0x%x\n", &kernel_pdir[0], &kernel_pdir[768]);
 
     enable_paging();
+
+    map_page(0x1920000, 0x1920000);
+    uint32_t* page_directory = (uint32_t*)0xFFFFF000;
+    kprintf("0x1920000 loc: 0x%x\tPHYS: 0x%x\n", &page_directory[PAGE_DIRECTORY_INDEX(0x1920000)], get_page(0x1920000, 0));
+
+    /* FIXME: Because of the behavior described below, that means after paging is enabled my 
+     * paging system is messed up. I am not sure what I am doing wrong with recursive paging,
+     * FIX: *********I AM NOT CLEARING THE CONTROL BITS WHEN DOING RECURSIVE PAGE TABLES ********/
+
+    /* This DOES NOT page fault (identity mapped address) */
+    uint32_t* arr0 = (uint32_t*)(1000 * 0x1000);
+    arr0[0] = 15;
+    kprintf("%d\n", arr0[0]);
+
+    /* This page faults */
+    uint32_t* arr = (uint32_t*)0x1920000;
+    arr[0] = 16;
+    kprintf("%d\n", arr[0]);
+
+
+    /* FIXME: NOTE: I need recursive paging, when I have to create a new page table things go to choas since
+     * it is not mapped yet, and mapping it trys to create another table... etc 
+     * for some reason, if I try to identity map everything it WORKS!!
+     * WAIT. This is because I am ACCIDENTLY recursively mapping the PAGE TABLE (screenshot saved in home dir)*/
+
 
     /* FIXME:
      * Make a specific area of virtual memory set aside for page structures so
      * that it won't get overwritten by anything else. Basically just make a 
      * whole map of where all kernel data structures get reserved space to. And
      * don't give out those addresses
-     * Only needs to be 4 MiB, so it can be from 0xC0000000 - 0xC0400000*/
+     * Only needs to be 4 MiB, so it can be from 0xC0000000 - 0xC0400000 */
+    // uint32_t* page_tables = (uint32_t*) (0xFFC00000 + ((0xC0001000 >> 10) & 0xFFC));
+    /* NOTE: TESTING */
+    // map_page(0xC0000000, 0);
+    // map_page(0xC0001000, 0);
+    // map_page(0xC0002000, 0);
+    // map_page(0xD0000000, 0);
+    // map_page(0xE0000000, 0);
+    // map_page(0xF0000000, 0);
+    // map_page(0xFF000000, 0);
 
-    /* TESTING */
-    map_page(0xC0000000, 0);
-    map_page(0xE0000000, 0);
-    map_page(0xF0000000, 0);
-    uint32_t* arr = (uint32_t*)0xC0000000;
-    arr[0] = 5;
-    arr[1] = 4;
-    arr[2] = 3;
-    arr[3] = 2;
-    arr[4] = 1;
-    for (int i = 0; i < 5; i++) {
-        kprintf("arr[%d] = %d\n", i, arr[i]);
-    }
+    /* WHY THE FUCK ARE THESE POINTING TO THE SAME PHYSICAL ADDRESES */
+    // uint32_t* arr0 = (uint32_t*)0xC0000000;
+    // arr0[0] = 9;
+    // arr0[1] = 8;
+    // arr0[2] = 7;
+    // arr0[3] = 6;
+    // arr0[4] = 5;
 
-    kprintf("AFTER: First page table 0x%x\n Second page table 0x%x\n", &kernel_pdir[0], &kernel_pdir[1]);
-    kprintf("First table addy 0x%x\n", &first_page_table);
+    // uint32_t* arr1 = (uint32_t*)0xC0001000;
+    // arr1[0] = 5;
+    // arr1[1] = 4;
+    // arr1[2] = 3;
+    // arr1[3] = 2;
+    // arr1[4] = 1;
+    // for (int i = 0; i < 5; i++) {
+    //     kprintf("0xC0000000: arr[%d] = %d | 0xC0001000: arr1[%d] = %d\n", i, arr0[i], i, arr1[i]);
+    // }
 
-
-    // char buf[16];
-    // itoa(get_page(0x1000 * 1023, 1), buf, 16);
-    // puts("Page: 0x");
-    // puts(buf);
-    // puts("\n");
+    // kprintf("First page table 0x%x\n Second page table 0x%x\n", first_page_table, &kernel_pdir[1]);
+    // kprintf("0x3afbff   loc: 0x%x\tPHYS: 0x%x\n", &kernel_pdir[PAGE_DIRECTORY_INDEX(0x3afbff)],   get_page(0x3afbff, 0));
+    // kprintf("0x3fffff   loc: 0x%x\tPHYS: 0x%x\n", &kernel_pdir[PAGE_DIRECTORY_INDEX(0x3fffff)],   get_page(0x3fffff, 0));
+    // kprintf("0xC0000000 loc: 0x%x\tPHYS: 0x%x\n", &kernel_pdir[PAGE_DIRECTORY_INDEX(0xC0000000)], get_page(0xC0000000, 0));
+    // kprintf("0xC0001000 loc: 0x%x\tPHYS: 0x%x\n", &kernel_pdir[PAGE_DIRECTORY_INDEX(0xC0001000)], get_page(0xC0001000, 0));
+    // kprintf("0xD0000000 loc: 0x%x\tPHYS: 0x%x\n", &kernel_pdir[PAGE_DIRECTORY_INDEX(0xD0000000)], get_page(0xD0000000, 0));
+    // kprintf("0xC0000000 page dir index: 0x%x\tpage table index: 0x%x\n", PAGE_DIRECTORY_INDEX(0xC0000000), PAGE_TABLE_INDEX(0xC0000000));
+    // kprintf("0xD0000000 page dir index: 0x%x\tpage table index: 0x%x\n", PAGE_DIRECTORY_INDEX(0xD0000000), PAGE_TABLE_INDEX(0xC0000000));
+    // kprintf("0xE0000000 loc: 0x%x\tPHYS: 0x%x\n", &kernel_pdir[PAGE_DIRECTORY_INDEX(0xE0000000)], get_page(0xE0000000, 0));
+    // kprintf("0xF0000000 loc: 0x%x\tPHYS: 0x%x\n", &kernel_pdir[PAGE_DIRECTORY_INDEX(0xF0000000)], get_page(0xF0000000, 0));
+    // kprintf("0xFF000000 loc: 0x%x\tPHYS: 0x%x",   &kernel_pdir[PAGE_DIRECTORY_INDEX(0xFF000000)], get_page(0xFF000000, 0));
+    // kprintf("pdir[1023] loc: 0x%x\n", &kernel_pdir[1023]);
 }
