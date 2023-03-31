@@ -31,7 +31,7 @@ map_page(uint32_t virt, uint32_t phys)
         phys = pmm_find_free_frame() * 0x1000;
     }
 
-    // kprintf("ACCESSING PAGE TABLE WITH VIRT: 0x%x and PHYS 0x%x\n", virt, phys);
+    kprintf("ACCESSING PAGE TABLE WITH VIRT: 0x%x and PHYS 0x%x\n", virt, phys);
     if (paging_enabled)
         page_table = 0xFFC00000 + ((virt >> 12) * 4);
     else 
@@ -41,7 +41,7 @@ map_page(uint32_t virt, uint32_t phys)
     pmm_set_frame(phys / 0x1000);
     used_memory += 4096;
 
-    // kprintf("Putting entry in table 0x%x with VIRT: 0x%x and PHYS: 0x%x\n", page_table, virt, phys);
+    kprintf("Putting entry in table 0x%x with VIRT: 0x%x and PHYS: 0x%x\n", page_table, virt, phys);
     if (paging_enabled)
         *((uint32_t*)page_table) = phys | 3;
     else
@@ -89,7 +89,7 @@ create_page_table(uint32_t virt)
     else
         page_directory = kernel_pdir;
 
-    // kprintf("NEW TABLE: 0x%x\n", new_table * 0x1000);
+    kprintf("NEW TABLE: 0x%x\n", new_table * 0x1000);
 
     page_directory[PAGE_DIRECTORY_INDEX(virt)] = (new_table * 0x1000) | 3;
 
@@ -115,20 +115,21 @@ get_page(uint32_t virt, uint8_t create)
         page_table = 0xFFC00000 + ((virt >> 12) * 4);
     else 
         page_table = (page_directory[PAGE_DIRECTORY_INDEX(virt)] & PAGE_TABLE_ADDRESS_MASK);
-    // kprintf("GETTING PAGE FROM TABLE: 0x%x\n", page_table);
+    kprintf("GETTING PAGE FROM TABLE: 0x%x\n", page_table);
 
     /* Remove control bits, this gets the tables address */
     page_table &= PAGE_TABLE_ADDRESS_MASK;
 
-    if (paging_enabled)
-        /* FIXME: CAUSING PAGE FAULT */
-        page = *((uint32_t*)page_table);
-    else
-        page = ((uint32_t*)page_table)[PAGE_TABLE_INDEX(virt)];
-    // kprintf("PAGE: 0x%x\n", page);
+    // if (paging_enabled)
+        // page = *((uint32_t*)page_table);
+    // else
+    /* I think I should always do this one, the above just gets 
+     * the first entry in the page table */
+    page = ((uint32_t*)page_table)[PAGE_TABLE_INDEX(virt)];
+    kprintf("PAGE: 0x%x\n", page);
     /* Remove control bits, this gets the pages address */
     page &= PAGE_TABLE_ADDRESS_MASK;
-    // kprintf("GOT PAGE: 0x%x FROM INDEX: %d\n", page, PAGE_TABLE_INDEX(virt));
+    kprintf("GOT PAGE: 0x%x FROM INDEX: %d\n", page, PAGE_TABLE_INDEX(virt));
 
     /* NOTE: Change this to check if the page is present or not once I fix the table code */
     /* If page is garbage (does not exist), return 0 */
@@ -245,9 +246,9 @@ init_paging()
      * TRY TO IMPLEMENT THE SIMPLEST MAPPING AND GETTER I CAN DOWN BELOW */
 
     /* This DOES NOT page fault (identity mapped address) */
-    uint32_t* arr2 = (uint32_t*)(1000 * 0x1000);
-    arr2[0] = 15;
-    kprintf("%d\n", arr2[0]);
+    // uint32_t* arr0 = (uint32_t*)(1000 * 0x1000);
+    // arr0[0] = 15;
+    // kprintf("%d\n", arr0[0]);
 
     /* This page faults */
     uint32_t* arr = (uint32_t*)0x1920000;
@@ -296,15 +297,15 @@ init_paging()
     }
 
     // kprintf("First page table 0x%x\n Second page table 0x%x\n", first_page_table, &kernel_pdir[1]);
-    kprintf("0x3afbff   loc: 0x%x\tPHYS: 0x%x\n", &kernel_pdir[PAGE_DIRECTORY_INDEX(0x3afbff)],   get_page(0x3afbff, 0));
-    kprintf("0x3fffff   loc: 0x%x\tPHYS: 0x%x\n", &kernel_pdir[PAGE_DIRECTORY_INDEX(0x3fffff)],   get_page(0x3fffff, 0));
+    // kprintf("0x3afbff   loc: 0x%x\tPHYS: 0x%x\n", &kernel_pdir[PAGE_DIRECTORY_INDEX(0x3afbff)],   get_page(0x3afbff, 0));
+    // kprintf("0x3fffff   loc: 0x%x\tPHYS: 0x%x\n", &kernel_pdir[PAGE_DIRECTORY_INDEX(0x3fffff)],   get_page(0x3fffff, 0));
     kprintf("0xC0000000 loc: 0x%x\tPHYS: 0x%x\n", &kernel_pdir[PAGE_DIRECTORY_INDEX(0xC0000000)], get_page(0xC0000000, 0));
     kprintf("0xC0001000 loc: 0x%x\tPHYS: 0x%x\n", &kernel_pdir[PAGE_DIRECTORY_INDEX(0xC0001000)], get_page(0xC0001000, 0));
-    kprintf("0xD0000000 loc: 0x%x\tPHYS: 0x%x\n", &kernel_pdir[PAGE_DIRECTORY_INDEX(0xD0000000)], get_page(0xD0000000, 0));
-    kprintf("0xC0000000 page dir index: 0x%x\tpage table index: 0x%x\n", PAGE_DIRECTORY_INDEX(0xC0000000), PAGE_TABLE_INDEX(0xC0000000));
-    kprintf("0xD0000000 page dir index: 0x%x\tpage table index: 0x%x\n", PAGE_DIRECTORY_INDEX(0xD0000000), PAGE_TABLE_INDEX(0xC0000000));
-    kprintf("0xE0000000 loc: 0x%x\tPHYS: 0x%x\n", &kernel_pdir[PAGE_DIRECTORY_INDEX(0xE0000000)], get_page(0xE0000000, 0));
-    kprintf("0xF0000000 loc: 0x%x\tPHYS: 0x%x\n", &kernel_pdir[PAGE_DIRECTORY_INDEX(0xF0000000)], get_page(0xF0000000, 0));
-    kprintf("0xFF000000 loc: 0x%x\tPHYS: 0x%x",   &kernel_pdir[PAGE_DIRECTORY_INDEX(0xFF000000)], get_page(0xFF000000, 0));
+    // kprintf("0xD0000000 loc: 0x%x\tPHYS: 0x%x\n", &kernel_pdir[PAGE_DIRECTORY_INDEX(0xD0000000)], get_page(0xD0000000, 0));
+    // kprintf("0xC0000000 page dir index: 0x%x\tpage table index: 0x%x\n", PAGE_DIRECTORY_INDEX(0xC0000000), PAGE_TABLE_INDEX(0xC0000000));
+    // kprintf("0xD0000000 page dir index: 0x%x\tpage table index: 0x%x\n", PAGE_DIRECTORY_INDEX(0xD0000000), PAGE_TABLE_INDEX(0xC0000000));
+    // kprintf("0xE0000000 loc: 0x%x\tPHYS: 0x%x\n", &kernel_pdir[PAGE_DIRECTORY_INDEX(0xE0000000)], get_page(0xE0000000, 0));
+    // kprintf("0xF0000000 loc: 0x%x\tPHYS: 0x%x\n", &kernel_pdir[PAGE_DIRECTORY_INDEX(0xF0000000)], get_page(0xF0000000, 0));
+    // kprintf("0xFF000000 loc: 0x%x\tPHYS: 0x%x",   &kernel_pdir[PAGE_DIRECTORY_INDEX(0xFF000000)], get_page(0xFF000000, 0));
     // kprintf("pdir[1023] loc: 0x%x\n", &kernel_pdir[1023]);
 }
