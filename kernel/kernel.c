@@ -100,6 +100,7 @@ kernel_main(multiboot_info_t* mbi, uint32_t magic)
         kernel_panic();
 
     terminal_initialize();
+    clear_screen();
     gdt_install();
     idt_install();
     isr_install();
@@ -107,14 +108,13 @@ kernel_main(multiboot_info_t* mbi, uint32_t magic)
     timer_install();
     keyboard_install();
     disable_blinking();
-    clear_screen();
     pmm_init();
     print_header();
     init_paging();
 
     // kprintf("Kernel Size: %d bytes\n", &kernel_end - &kernel_start);
 
-    // run_shell(mbi);
+    run_shell(mbi);
 
     // print_header();
     // delay(1000);

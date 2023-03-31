@@ -149,7 +149,11 @@ get_time_string(char* time_str)
     memset(time_str, 0, strlen(time_str));
 
     /* My system clock is broken, -4 is just for me until I fix it :( */
-    hour -= 4;
+    if (hour - 4 < 0) {
+        hour = 24 + hour - 4;
+    } else {
+        hour -= 4;
+    }
     itoa(hour, buf, 10);
     /* Pads hour with a 0 */
     if (strlen(buf) == 1) {
