@@ -13,6 +13,7 @@ uint8_t terminal_color;
 volatile uint16_t* terminal_buffer;
 
 static const uint16_t* VGA_MEMORY_START = (uint16_t*) 0xB8000;
+// static const uint32_t* VGA_MEMORY_START = (uint32_t*) 0xC00B8000;
 
 /* FIX: Just VGA_HEIGHT * VGA_WIDTH is NOT enough space,
  * the 8 is a temp fix (probs too big) until I do the math */
@@ -111,7 +112,6 @@ terminal_initialize(void)
     /* Sets the hardware cursor to be a block instead of underscore*/
     outb(0x3D4, 0xa);
     outb(0x3D5, 0x0);
-    clear_screen();
 }
 
 void
@@ -271,4 +271,16 @@ void
 move_cursor_right(int num)
 {
     move_cursor(terminal_column += num, terminal_row);
+}
+
+uint8_t
+get_cursor_x()
+{
+    return terminal_column;
+}
+
+uint8_t
+get_cursor_y()
+{
+    return terminal_row;
 }

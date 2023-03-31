@@ -20,6 +20,7 @@ void crash_me();
 void kernel_panic();
 void disable_blinking();
 extern uint64_t kernel_end;
+extern uint64_t kernel_start;
 
 uint32_t curr_free_mem;
 
@@ -27,8 +28,10 @@ void
 run_shell(multiboot_info_t* mbi)
 {
     char shell_buf[50] = {0};
+    uint8_t prompt_start = 0;
 
     puts("$ ");
+    prompt_start = get_cursor_x();
 
     for (;;) {
         char c = 0;
@@ -77,6 +80,9 @@ run_shell(multiboot_info_t* mbi)
             memset(shell_buf, 0, strlen(shell_buf));
             puts("$ ");
         } else if (c == 8) { /* Backspace */
+            /* Cannot delete prompt */
+            if (get_cursor_x() == prompt_start)
+                continue;
             shell_buf[strlen(shell_buf) - 1] = '\0';
             delch();
         } else if (c) {
@@ -93,7 +99,6 @@ kernel_main(multiboot_info_t* mbi, uint32_t magic)
     if (magic != MULTIBOOT_BOOTLOADER_MAGIC)
         kernel_panic();
 
-    /* Initialize terminal interface */
     terminal_initialize();
     gdt_install();
     idt_install();
@@ -104,11 +109,12 @@ kernel_main(multiboot_info_t* mbi, uint32_t magic)
     disable_blinking();
     clear_screen();
     pmm_init();
-
-    kprintf("Kernel Size: %d bytes\n", &kernel_end - (uint64_t*)0x100000);
-
+    print_header();
     init_paging();
-    run_shell(mbi);
+
+    // kprintf("Kernel Size: %d bytes\n", &kernel_end - &kernel_start);
+
+    // run_shell(mbi);
 
     // print_header();
     // delay(1000);

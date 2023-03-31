@@ -1,5 +1,6 @@
 #include "../io/port_io.h"
 #include "../stdlib/util.h"
+#include "../drivers/tty.h"
 
 #define CURRENT_YEAR 2023                                   // Change this each year!
 
@@ -148,7 +149,8 @@ get_time_string(char* time_str)
     memset(time_str, 0, strlen(time_str));
 
     /* My system clock is broken, -4 is just for me until I fix it :( */
-    itoa(hour - 4, buf, 10);
+    hour -= 4;
+    itoa(hour, buf, 10);
     /* Pads hour with a 0 */
     if (strlen(buf) == 1) {
         buf[1] = buf[0];

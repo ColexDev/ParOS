@@ -14,9 +14,9 @@ irq_handler(struct registers* regs)
     int irq = regs->interrupt - 0x20;
 
     if (irq_handlers[irq] == NULL) {
-        puts("Unhandled IRQ: ");
+        // puts("Unhandled IRQ: ");
         // puts(itoa(irq, 10));
-        puts("\n");
+        // puts("\n");
     } else {
         irq_handlers[irq](regs);
     }
