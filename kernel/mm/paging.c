@@ -193,63 +193,24 @@ void
 init_paging()
 {
     /* Sets all page tables to not present */
-    for(int i = 0; i < 1024; i++) {
+    for(uint16_t i = 0; i < 1024; i++) {
         kernel_pdir[i] = 2; // attribute set to: supervisor level, read/write, not present(010 in binary)
     }
+    /* Setup recursive paging */
+    kernel_pdir[1023] = ((uint32_t)kernel_pdir) | 3;
 
-    /* This is currently mapping KERNEL_VIRT_BASE to virtual address 0 since it is
-     * the first entry in the page table 
-     * REMEMBER: The goal is to map VIRTUAL ADDRESS 0xC0000000 to PHYSICAL address 0.
-     * The kernel itself starts at PHYS 0x100000 (1 MiB) as specified in the linker
-     * script, but we also want stuff like the VGA buffer (PHYHS 0xB8000) to be part
-     * of the kernel mapping.
+    /* Set first page table */
+    kernel_pdir[0] = (uint32_t)first_page_table | 3;
 
     /* Identity map first 4 MiB of memory */
-    kernel_pdir[0] = (uint32_t)first_page_table | 3;
-    kernel_pdir[1023] = ((uint32_t)kernel_pdir) | 3;
-    for (int i = 0; i < 1024; i++) {
-        map_page(i * 0x1000, i * 0x1000);
+    for (uint32_t phys = 0; phys < 0x400000; phys += PAGE_SIZE) {
+        map_page(phys, phys);
+    }
+
+    /* Maps the kernel heap (first 1 MiB of it) */
+    for (uint32_t phys = 0; phys < 0x100000; phys += PAGE_SIZE) {
+        map_page(0xF0000000 + phys, 0);
     }
 
     enable_paging();
-
-    /* NOTE: DOING THE BELOW EXAMPLE IMPLEMENTATION HELPED,
-     * https://forum.osdev.org/viewtopic.php?f=15&t=19387 THIS HAD WHAT I NEEDED 
-     * I was just calculating the page table index wrong, its 0xFFC00000 + ((virt >> 12) * 4)
-     * for some reason???*/
-
-    /* FIXME: NOTE: I need recursive paging, when I have to create a new page table things go to choas since
-     * it is not mapped yet, and mapping it trys to create another table... etc 
-     * for some reason, if I try to identity map everything it WORKS!!
-     * WAIT. This is because I am ACCIDENTLY recursively mapping the PAGE TABLE (screenshot saved in home dir) */
-
-
-    /* FIXME:
-     * Make a specific area of virtual memory set aside for page structures so
-     * that it won't get overwritten by anything else. Basically just make a 
-     * whole map of where all kernel data structures get reserved space to. And
-     * don't give out those addresses
-     * Only needs to be 4 MiB, so it can be from 0xC0000000 - 0xC0400000 */
-    // uint32_t* page_tables = (uint32_t*) (0xFFC00000 + ((0xC0001000 >> 10) & 0xFFC));
-    /* NOTE: TESTING */
-    // map_page(0xC0000000, 0);
-    // map_page(0xC0001000, 0);
-    // map_page(0xC0002000, 0);
-    // map_page(0xD0000000, 0);
-    // map_page(0xE0000000, 0);
-    // map_page(0xF0000000, 0);
-    // map_page(0xFF000000, 0);
-
-    // kprintf("First page table 0x%x\n Second page table 0x%x\n", first_page_table, &kernel_pdir[1]);
-    // kprintf("0x3afbff   loc: 0x%x\tPHYS: 0x%x\n", &kernel_pdir[PAGE_DIRECTORY_INDEX(0x3afbff)],   get_page(0x3afbff, 0));
-    // kprintf("0x3fffff   loc: 0x%x\tPHYS: 0x%x\n", &kernel_pdir[PAGE_DIRECTORY_INDEX(0x3fffff)],   get_page(0x3fffff, 0));
-    // kprintf("0xC0000000 loc: 0x%x\tPHYS: 0x%x\n", &kernel_pdir[PAGE_DIRECTORY_INDEX(0xC0000000)], get_page(0xC0000000, 0));
-    // kprintf("0xC0001000 loc: 0x%x\tPHYS: 0x%x\n", &kernel_pdir[PAGE_DIRECTORY_INDEX(0xC0001000)], get_page(0xC0001000, 0));
-    // kprintf("0xD0000000 loc: 0x%x\tPHYS: 0x%x\n", &kernel_pdir[PAGE_DIRECTORY_INDEX(0xD0000000)], get_page(0xD0000000, 0));
-    // kprintf("0xC0000000 page dir index: 0x%x\tpage table index: 0x%x\n", PAGE_DIRECTORY_INDEX(0xC0000000), PAGE_TABLE_INDEX(0xC0000000));
-    // kprintf("0xD0000000 page dir index: 0x%x\tpage table index: 0x%x\n", PAGE_DIRECTORY_INDEX(0xD0000000), PAGE_TABLE_INDEX(0xC0000000));
-    // kprintf("0xE0000000 loc: 0x%x\tPHYS: 0x%x\n", &kernel_pdir[PAGE_DIRECTORY_INDEX(0xE0000000)], get_page(0xE0000000, 0));
-    // kprintf("0xF0000000 loc: 0x%x\tPHYS: 0x%x\n", &kernel_pdir[PAGE_DIRECTORY_INDEX(0xF0000000)], get_page(0xF0000000, 0));
-    // kprintf("0xFF000000 loc: 0x%x\tPHYS: 0x%x",   &kernel_pdir[PAGE_DIRECTORY_INDEX(0xFF000000)], get_page(0xFF000000, 0));
-    // kprintf("pdir[1023] loc: 0x%x\n", &kernel_pdir[1023]);
 }

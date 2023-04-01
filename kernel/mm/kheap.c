@@ -2,18 +2,12 @@
 
 #include "paging.h"
 #include "pmm.h"
-
-#define BLOCK_SIZE 32 /* bytes */
-#define NUM_BLOCKS_PER_PAGE PAGE_SIZE / BLOCK_SIZE
+#include "kheap.h"
+#include "../stdlib/util.h"
 
 /* Size of bitmap: 
-    * For ever 32 bytes (256 bits) we store we need 1 bit,
-    * so for every 256 bytes you need 1 byte.
-    * If my math is correct this means I need 1 page (4KiB) of bitmap
-    * per 1MiB of heap 
-    *
-    * 256 bytes -> 1 byte
-    * 0x100000 (256 * 0x1000) bytes -> 0x1000 (1 * 0x1000) bytes */
+    * 8 byte block size means 0x20000 blocks per 1 MiB of heap.
+    * That is 16 KiB or 4 pages worth */
 
 /* NOTES:
 * So I have to keep track of what virtual address I am currently on for the next address.
@@ -25,8 +19,8 @@
 * higher part of the higher half mapping, it will be hardcoded ex: 0xf0000000 */
 
 /* Implementation 
- * NOTE: This is VERY BAD and will lead to lots of internal fragmentation
- * but I honestly do not care at the moment, I can change it later if I want
+ * NOTE: This is VERY BAD and may lead to lots of internal fragmentation
+ * but I honestly do not care at the moment, I can change it later if I want.
  *
     * Create a variable sized bitmap that is one block per bit. 
     *
@@ -38,8 +32,110 @@
     * block. The Virtual address can be calculated by taking the start
     * of the heap and adding onto it.
     *
-    * Have one block be the header with a magic number(4 bytes), and the
+    * Have one block be the header with a magic number (4 bytes), and the
     * size of the block (4 bytes) including the header.
     *
     * When freeing, get the size of the allocation from the header
     * and free from the starting address for the size of the allocation */
+
+/* Move this off the stack eventually */
+static uint8_t bitmap[HEAP_START_SIZE / BLOCK_SIZE / 8] = {0};
+
+void
+set_frame(uint32_t frame)
+{
+    bitmap[WORD_OFFSET(frame)] |= (1 << BIT_OFFSET(frame));
+}
+
+void
+clear_frame(uint32_t frame)
+{
+    bitmap[WORD_OFFSET(frame)] &= ~(1 << BIT_OFFSET(frame));
+}
+
+uint8_t
+get_frame(uint32_t frame)
+{
+    uint8_t ret = bitmap[WORD_OFFSET(frame)] & (1 << BIT_OFFSET(frame));
+    return ret != 0;
+}
+
+
+/* When testing this, my first allocation should return 
+ * 0xF0000008 since the header takes up the first block */
+void*
+kmalloc(uint32_t size)
+{
+    uint32_t num_blocks   = size / BLOCK_SIZE;
+    uint32_t total_blocks = HEAP_START_SIZE / BLOCK_SIZE;
+    uint32_t free_frames  = 0;
+    uint32_t start_bit    = 0;
+    uint32_t start_block  = 0;
+    uint32_t header_block = 0;
+    uint32_t* start_addr  = 0;
+
+    struct block_header* header;
+
+    if (size % BLOCK_SIZE)
+        num_blocks = (size / BLOCK_SIZE) + 1;
+
+    header->size = num_blocks;
+    header->magic = HEAP_MAGIC;
+
+    for (uint32_t i = 0; i < total_blocks; i++) {
+        /* The frame is already taken */
+        if (get_frame(i)) {
+            start_bit = i + 1;
+            free_frames = 0;
+            continue;
+        }
+
+        free_frames++;
+
+        /* + 1 accounts for the block needed for the header */
+        if (free_frames == num_blocks + 1) {
+            start_block = (WORD_OFFSET(start_bit) << 3) + BIT_OFFSET(start_bit);
+        }
+    }
+
+    /* Set the frame(s) as used */
+    for (uint32_t block = 0; block < num_blocks + 1; block++) {
+        set_frame(start_block + block);
+    }
+
+    /* Calculate the starting address of the block of memory, this is
+     * where the header resides, the address returned is after that */
+    start_addr = (uint32_t*)((start_block * BLOCK_SIZE) + HEAP_START_ADDR);
+
+    /* Set header */
+    memcpy(start_addr, header, sizeof(struct block_header));
+
+    return (void*)((uint32_t)start_addr + sizeof(struct block_header));
+}
+
+void
+kfree(void* ptr)
+{
+    // kprintf("Before free bitmap: %d\n", bitmap[0]);
+    struct block_header* header;
+    void* full_ptr = ptr - sizeof(struct block_header);
+    uint32_t start_block;
+
+    header = full_ptr;
+
+    start_block = (uint32_t)(full_ptr - HEAP_START_ADDR) / BLOCK_SIZE;
+
+    /* What should I do here??? */
+    if (header->magic != HEAP_MAGIC)
+        return;
+
+    for (uint32_t block = 0; block < header->size + 1; block++) {
+        clear_frame(start_block + block);
+    }
+
+    // kprintf("addr of ptr->0x%x\n", ptr);
+    // kprintf("Start block->%d\n", start_block);
+    // kprintf("Magic->0x%x\n", header->magic);
+    // kprintf("Size->%d\n", header->size);
+    // kprintf("After free bitmap: %d\n", bitmap[0]);
+}
