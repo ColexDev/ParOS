@@ -70,17 +70,17 @@ kstrcat(char *a, char *b) {
     return a;
 }
 
-void*
-kmalloc(size_t size)
-{
-    void* address;
-
-    memset((void*)curr_free_mem, 0, size);
-    address = (void*)curr_free_mem;
-    curr_free_mem += size;
-
-    return address;
-}
+// void*
+// kmalloc(size_t size)
+// {
+//     void* address;
+//
+//     memset((void*)curr_free_mem, 0, size);
+//     address = (void*)curr_free_mem;
+//     curr_free_mem += size;
+//
+//     return address;
+// }
 
 int
 get_int_len(int value)

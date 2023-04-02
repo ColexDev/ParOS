@@ -15,6 +15,7 @@
 #include "mm/mmap.h"
 #include "mm/pmm.h"
 #include "mm/paging.h"
+#include "mm/kheap.h"
 
 void crash_me();
 void kernel_panic();
@@ -100,6 +101,7 @@ kernel_main(multiboot_info_t* mbi, uint32_t magic)
         kernel_panic();
 
     terminal_initialize();
+    clear_screen();
     gdt_install();
     idt_install();
     isr_install();
@@ -107,14 +109,44 @@ kernel_main(multiboot_info_t* mbi, uint32_t magic)
     timer_install();
     keyboard_install();
     disable_blinking();
-    clear_screen();
     pmm_init();
     print_header();
     init_paging();
 
+    /* I think this is just wrong? */
     // kprintf("Kernel Size: %d bytes\n", &kernel_end - &kernel_start);
 
-    // run_shell(mbi);
+    // uint32_t* ptr = kmalloc(8);
+    // ptr[0] = 1;
+    // ptr[1] = 2;
+    // kprintf("kmalloc return addr: 0x%x\n", ptr);
+
+    // uint32_t* ptr2 = kmalloc(8);
+    // ptr2[0] = 3;
+    // ptr2[1] = 4;
+    // kprintf("kmalloc 2nd return addr: 0x%x\n", ptr2);
+
+    /* overwrites ptr2 header */
+    // ptr[2] = 8; /* overwrites ptr2 magic */
+    // ptr[3] = 9; /* overwrites ptr2 size  */
+
+    /* overwites ptr2 first index */
+    // ptr[4] = 10;
+
+    // for (uint32_t i = 0; i < 2; i++) {
+    //     kprintf("ptr[%d] = %d\tptr2[%d] = %d\n", i, ptr[i], i, ptr2[i]);
+    // }
+
+    /* This causes a division by 0 fault if i < 4???
+     * for both ptr and ptr2 */
+    // for (uint32_t i = 0; i < 3; i++) {
+    //     kprintf("&ptr[%d] = 0x%x\n", i, &ptr[i]);
+    // }
+
+    // kfree(ptr);
+    // kfree(ptr2);
+
+    run_shell(mbi);
 
     // print_header();
     // delay(1000);

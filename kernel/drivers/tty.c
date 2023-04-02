@@ -80,7 +80,6 @@ print_header()
         terminal_putentryat(os_name[i], vga_entry_color(VGA_COLOR_BLACK, VGA_COLOR_WHITE), i, 0);
     }
 
-    /* Print time in upper right corner */
     char time_str[9];
     char date_str[9];
 
