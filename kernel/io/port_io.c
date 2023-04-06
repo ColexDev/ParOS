@@ -17,6 +17,23 @@ inb(uint16_t port)
 	return res;
 }
 
+/* Send Word */
+void
+outw(uint16_t port, uint16_t data)
+{
+	asm volatile("outw %0, %1" : : "a"(data), "Nd"(port));
+	return;
+}
+
+/* Receive Byte */
+uint16_t
+inw(uint16_t port)
+{
+	uint16_t res;
+	asm volatile("inw %1, %0" : "=a"(res) : "Nd"(port));
+	return res;
+}
+
 void
 io_wait(void)
 {
