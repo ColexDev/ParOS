@@ -319,7 +319,8 @@ simple_vsprintf(char **out, char *format, va_list ap)
 
                 case('s'):
                     u.s = va_arg(ap, char *);
-                    pc += prints(out, u.s ? u.s : "(null)", width, flags);
+                    // pc += prints(out, u.s ? u.s : "(null)", width, flags);
+                    pc += prints(out, u.s, width, flags);
                     break;
                 case('l'):
                     ++format;
