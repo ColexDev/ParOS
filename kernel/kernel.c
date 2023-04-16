@@ -16,6 +16,8 @@
 #include "mm/pmm.h"
 #include "mm/paging.h"
 #include "mm/kheap.h"
+#include "io/port_io.h"
+#include "drivers/disk.h"
 
 void crash_me();
 void kernel_panic();
@@ -92,6 +94,7 @@ run_shell(multiboot_info_t* mbi)
         }
     }
 }
+
 
 void
 kernel_main(multiboot_info_t* mbi, uint32_t magic) 
