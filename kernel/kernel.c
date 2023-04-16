@@ -18,6 +18,7 @@
 #include "mm/kheap.h"
 #include "io/port_io.h"
 #include "drivers/disk.h"
+#include "fs/fs.h"
 
 void crash_me();
 void kernel_panic();
@@ -115,6 +116,23 @@ kernel_main(multiboot_info_t* mbi, uint32_t magic)
     pmm_init();
     print_header();
     init_paging();
+
+    // create_file("test.txt");
+    create_file("test2.txt");
+    // clear_sector(73);
+    // clear_sector(NODES_LBA_OFFSET);
+    // uint8_t* buffer = kmalloc(512);
+    // ata_read_sector(NODES_LBA_OFFSET, buffer);
+    // struct file_node* test = (struct file_node*)buffer;
+    // kprintf("LBA: %d\n", test->start_lba);
+    // kprintf("ID: %d\n", test->id);
+    // kprintf("NAME: %s\n", test->name);
+
+    // uint8_t* contents = kmalloc(512);
+    // ata_read_sector(test->start_lba, contents);
+    // kprintf("CONTENTS: %s\n", contents);
+    // open_file("test.txt");
+    open_file("test2.txt");
 
     /* I think this is just wrong? */
     // kprintf("Kernel Size: %d bytes\n", &kernel_end - &kernel_start);
