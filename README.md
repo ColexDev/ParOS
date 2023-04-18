@@ -21,9 +21,8 @@ ParOS is a hobby operating system that I am working on to learn operating system
 - [x] Timer
 - [x] Keyboard driver
 - [x] Physical memory management
-- [ ] Higher half kernel
-- [ ] Virtual memory management (paging)
-- [ ] Heap (malloc and free)
+- [x] Virtual memory management (paging)
+- [x] Heap (malloc and free)
 - [ ] Multiprocessing
 - [ ] Filesystem
 - [ ] Shell
