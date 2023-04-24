@@ -8,9 +8,10 @@ struct __attribute__((packed)) file_node {
     uint32_t size; /* In lba's */
     uint32_t start_lba;
     uint16_t id;
+    uint8_t checksum;
     // uint16_t dir_id;
     // char timestamp[14]; /* YYYYMMDDHHMMSS */
-    char name[22];
+    char name[21];
 };
 
 struct __attribute__((packed)) directory_node {
@@ -23,9 +24,11 @@ struct __attribute__((packed)) directory_node {
 #define WORD_OFFSET(b) ((b) / WORD_LENGTH)
 #define BIT_OFFSET(b)  ((b) % WORD_LENGTH)
 
-#define DATA_LBA_OFFSET  73
-#define NODES_LBA_OFFSET 41
+#define DATA_LBA_OFFSET  9
+#define NODES_LBA_OFFSET 5
 
 void clear_sector(uint32_t lba);
 void create_file(char* name);
 struct file_node* open_file(char* name);
+void write_fs_header();
+void read_fs_header();

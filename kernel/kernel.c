@@ -118,7 +118,7 @@ kernel_main(multiboot_info_t* mbi, uint32_t magic)
     init_paging();
 
     // create_file("test.txt");
-    create_file("test2.txt");
+    // create_file("test2.txt");
     // clear_sector(73);
     // clear_sector(NODES_LBA_OFFSET);
     // uint8_t* buffer = kmalloc(512);
@@ -132,7 +132,26 @@ kernel_main(multiboot_info_t* mbi, uint32_t magic)
     // ata_read_sector(test->start_lba, contents);
     // kprintf("CONTENTS: %s\n", contents);
     // open_file("test.txt");
-    open_file("test2.txt");
+    // kprintf("Opening file: %s\n", "test2.txt");
+    // open_file("test2.txt");
+
+    // read_fs_header();
+    // create_file("test.txt");
+    // write_fs_header();
+    // open_file("test.txt");
+
+    // contents[0] = 5;
+    // contents[1] = 6;
+    // kprintf("Address of contents: %p\n", &contents);
+    // ata_write_sector(0, contents);
+
+    // uint32_t test = 5;
+    // kprintf("TEST %d\n", test);
+
+    // uint8_t* contents = kmalloc(2);
+    // uint8_t contents[2];
+    // kprintf("Address of contents: %d\n", contents);
+    // ata_write_sector(0, contents);
 
     /* I think this is just wrong? */
     // kprintf("Kernel Size: %d bytes\n", &kernel_end - &kernel_start);

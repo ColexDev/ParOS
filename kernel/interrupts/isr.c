@@ -293,12 +293,13 @@ isr_handler(struct registers* regs)
         // puts(itoa(regs->interrupt, 10));
         puts("\n");
     } else {
-        puts("UNHANDLED EXCEPTION: ");
-        char buf[100];
-        itoa(regs->interrupt, buf, 10);
-        puts(buf);
-        puts("\n");
-        puts("SERIOUS ERROR\n");
+        kprintf("UNHANDLED EXCEPTION: %d\n", regs->interrupt);
+        // puts("UNHANDLED EXCEPTION: ");
+        // char buf[100];
+        // itoa(regs->interrupt, buf, 10);
+        // puts(buf);
+        // puts("\n");
+        // puts("SERIOUS ERROR\n");
         kernel_panic();
     }
 }

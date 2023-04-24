@@ -3,7 +3,6 @@
 #include "paging.h"
 #include "pmm.h"
 #include "../stdlib/util.h"
-#include "../stdlib/util.h"
 #include "../drivers/tty.h"
 
 uint32_t kernel_pdir[1024] __attribute__((aligned(PAGE_FRAME_SIZE)));
@@ -176,6 +175,7 @@ void
 enable_paging()
 {
     uint32_t cr0 = 0;
+    kprintf("ADDRESS OF CR0: %d\n", &cr0);
 
     /* Load page directory base address into CR3 */
     asm volatile("mov %0, %%cr3":: "r"(kernel_pdir));
