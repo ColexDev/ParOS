@@ -175,7 +175,6 @@ void
 enable_paging()
 {
     uint32_t cr0 = 0;
-    kprintf("ADDRESS OF CR0: %d\n", &cr0);
 
     /* Load page directory base address into CR3 */
     asm volatile("mov %0, %%cr3":: "r"(kernel_pdir));

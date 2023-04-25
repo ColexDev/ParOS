@@ -112,7 +112,7 @@ kernel_main(multiboot_info_t* mbi, uint32_t magic)
     irq_install();
     timer_install();
     keyboard_install();
-    disable_blinking();
+    // disable_blinking();
     pmm_init();
     print_header();
     init_paging();
@@ -144,13 +144,15 @@ kernel_main(multiboot_info_t* mbi, uint32_t magic)
     // contents[1] = 6;
     // kprintf("Address of contents: %p\n", &contents);
     // ata_write_sector(0, contents);
+    // kprintf("TESTING\n");
+    // uint32_t test1 = 6;
 
     // uint32_t test = 5;
-    // kprintf("TEST %d\n", test);
+    // kprintf("TEST 0x%x\n", &test);
 
-    // uint8_t* contents = kmalloc(2);
+    // uint8_t* contents = kmalloc(16);
     // uint8_t contents[2];
-    // kprintf("Address of contents: %d\n", contents);
+    // kprintf("Address of contents: 0x%x\n", contents);
     // ata_write_sector(0, contents);
 
     /* I think this is just wrong? */

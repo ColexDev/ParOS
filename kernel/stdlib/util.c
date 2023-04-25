@@ -63,11 +63,13 @@ memset(void *dest, int val, size_t len)
 }
 
 char* 
-kstrcat(char *a, char *b) {
-    while (*a++);
-    a--;
-    while (*a++ = *b++);
-    return a;
+kstrcat(char *dest, char *src) {
+    char *rdest = dest;
+
+    while (*dest)
+      dest++;
+    while (*dest++ = *src++);
+    return rdest;
 }
 
 // void*
