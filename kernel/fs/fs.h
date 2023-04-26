@@ -24,11 +24,12 @@ struct __attribute__((packed)) directory_node {
 #define WORD_OFFSET(b) ((b) / WORD_LENGTH)
 #define BIT_OFFSET(b)  ((b) % WORD_LENGTH)
 
-#define DATA_LBA_OFFSET  9
-#define NODES_LBA_OFFSET 5
+#define DATA_LBA_OFFSET  10
+#define NODES_LBA_OFFSET 6
 
 void clear_sector(uint32_t lba);
 void create_file(char* name);
 struct file_node* open_file(char* name);
 void write_fs_header();
 void read_fs_header();
+void list_files();

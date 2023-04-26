@@ -76,6 +76,8 @@ run_shell(multiboot_info_t* mbi)
                 itoa(pmm_get_reserved_memory(), buf, 10);
                 puts(buf);
                 puts(" bytes\n");
+            } else if (!kstrcmp(shell_buf, "ls")) {
+                list_files();
             } else if (!kstrcmp(shell_buf, "exit")) {
                 break;
             } else {
@@ -135,10 +137,12 @@ kernel_main(multiboot_info_t* mbi, uint32_t magic)
     // kprintf("Opening file: %s\n", "test2.txt");
     // open_file("test2.txt");
 
-    // read_fs_header();
-    // create_file("test.txt");
-    // write_fs_header();
-    // open_file("test.txt");
+    read_fs_header();
+    create_file("test.txt");
+    create_file("test2.txt");
+    create_file("test3.txt");
+    open_file("test2.txt");
+    write_fs_header();
 
     // contents[0] = 5;
     // contents[1] = 6;
@@ -151,9 +155,9 @@ kernel_main(multiboot_info_t* mbi, uint32_t magic)
     // kprintf("TEST 0x%x\n", &test);
 
     // uint8_t* contents = kmalloc(16);
-    // uint8_t contents[2];
+    // uint8_t contents[512] = "HELLO\n";
     // kprintf("Address of contents: 0x%x\n", contents);
-    // ata_write_sector(0, contents);
+    // ata_write_sector(9, contents);
 
     /* I think this is just wrong? */
     // kprintf("Kernel Size: %d bytes\n", &kernel_end - &kernel_start);

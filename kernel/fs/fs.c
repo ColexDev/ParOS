@@ -117,10 +117,10 @@ clear_sector(uint32_t lba)
 // }
 
 uint32_t
-find_space()
+find_space(uint8_t* bitmap)
 {
     for (uint32_t i = 0; i < 2560 * 8; i++) {
-        uint8_t byte = data_bitmap[i];
+        uint8_t byte = bitmap[i];
 
         /* Move on if no 0 bits in byte */
         if (byte == 0xFF)
@@ -140,26 +140,24 @@ void
 create_file(char* name)
 {
     struct file_node f_node;
-    uint8_t* buffer = kmalloc(sizeof(uint8_t) * BYTES_IN_SECTOR);
-    uint8_t contents[6] = "Hello";
+    uint8_t contents[512] = "HELLO\n";
 
     memcpy(f_node.name, name, strlen(name));
     f_node.size = 0;
     f_node.id   = 0;
-    // f_node.start_lba = find_space() + DATA_LBA_OFFSET;
-    f_node.start_lba = DATA_LBA_OFFSET;
+    f_node.start_lba = find_space(data_bitmap) + DATA_LBA_OFFSET;
     f_node.checksum = NODE_CHECKSUM;
 
-    fs_set_frame(node_bitmap, 0);
+    fs_set_frame(node_bitmap, find_space(node_bitmap));
 
-    for (int i = 0; i < 100; i++)
-        fs_set_frame(data_bitmap, f_node.start_lba + i);
+    /* This is too complicated. 40 gives 50 lbas since we subtract 10 from i initally,
+     * find a better way to do this */
+    for (int i = f_node.start_lba - DATA_LBA_OFFSET; i < f_node.start_lba + 40; i++)
+        fs_set_frame(data_bitmap, i);
     
-    // ata_write_sector(0 + NODES_LBA_OFFSET, (uint8_t*)&f_node);
-    nodes[0] = f_node;
+    nodes[find_space(node_bitmap)] = f_node;
 
     /* Write hello to the file */
-    kprintf("Writing %s to LBA %d\n", contents, f_node.start_lba);
     ata_write_sector(f_node.start_lba, contents);
 }
 
@@ -174,13 +172,13 @@ write_fs_header()
     ata_write_sector(0, buffer);
 
     /* Write data bitmap (2560 bytes/5 sectors) */
-    for (uint8_t i = 1; i < NODES_LBA_OFFSET + 1; i++) {
+    for (uint8_t i = 1; i < NODES_LBA_OFFSET; i++) {
         memcpy(buffer, &data_bitmap[(i - 1) * BYTES_IN_SECTOR], BYTES_IN_SECTOR);
         ata_write_sector(i, buffer);
     }
 
     /* Write nodes (2048 bytes/4 sectors) */
-    for (uint8_t i = NODES_LBA_OFFSET + 1; i < DATA_LBA_OFFSET + 1; i++) {
+    for (uint8_t i = NODES_LBA_OFFSET; i < DATA_LBA_OFFSET; i++) {
         memcpy(buffer, &nodes[j], BYTES_IN_SECTOR);
         ata_write_sector(i, buffer);
         j += 32;
@@ -198,13 +196,13 @@ read_fs_header()
     memcpy(node_bitmap, buffer, 64);
 
     /* Read data bitmap (2560 bytes/5 sectors) */
-    for (uint8_t i = 1; i < NODES_LBA_OFFSET + 1; i++) {
+    for (uint8_t i = 1; i < NODES_LBA_OFFSET; i++) {
         ata_read_sector(i, buffer);
         memcpy(&data_bitmap[(i - 1) * BYTES_IN_SECTOR], buffer, BYTES_IN_SECTOR);
     }
 
     /* Read nodes (2048 bytes/4 sectors) */
-    for (uint8_t i = NODES_LBA_OFFSET + 1; i < DATA_LBA_OFFSET + 1; i++) {
+    for (uint8_t i = NODES_LBA_OFFSET; i < DATA_LBA_OFFSET; i++) {
         ata_read_sector(i, buffer);
         // memcpy(&nodes[(i - NODES_LBA_OFFSET + 1) * BYTES_IN_SECTOR], buffer, BYTES_IN_SECTOR);
         memcpy(&nodes[j], buffer, BYTES_IN_SECTOR);
@@ -219,26 +217,30 @@ open_file(char* name)
     uint8_t* contents = kmalloc(512);
     struct file_node fd;
 
-    for (int i = NODES_LBA_OFFSET; i < 4 + NODES_LBA_OFFSET; i++) {
-        kprintf("Reading sector...\n");
-        // ata_read_sector(i, buffer);
-        /* 16 nodes per sector */
-        for (int j = 0; j < 64; i++) {
-            fd = nodes[j];
-            // memcpy(fd, &buffer[j], sizeof(struct file_node));
+    for (int j = 0; j < 64; j++) {
+        fd = nodes[j];
+        // memcpy(fd, &buffer[j], sizeof(struct file_node));
 
-            if (kstrcmp(fd.name, name) == 0 && fd.checksum == NODE_CHECKSUM) {
-                kprintf("NAME: %s\n", fd.name);
-                kprintf("LBA: %d\n", fd.start_lba);
-                kprintf("Reading contents from LBA %d\n", fd.start_lba);
-                ata_read_sector(fd.start_lba, contents);
-                kprintf("CONTENTS: %s\n", contents);
-                /* FIXME: PLEASE FIX THIS */
-                return &fd;
-            }
+        if (kstrcmp(fd.name, name) == 0 && fd.checksum == NODE_CHECKSUM) {
+            kprintf("NAME: %s\n", fd.name);
+            kprintf("LBA: %d\n", fd.start_lba);
+            ata_read_sector(fd.start_lba, contents);
+            kprintf("CONTENTS: %s\n", contents);
+            /* FIXME: PLEASE FIX THIS */
+            return &fd;
         }
     }
 
     kfree(buffer);
     kfree(contents);
+}
+
+void
+list_files()
+{
+    for (uint16_t i = 0; i < (sizeof(nodes) / sizeof(struct file_node)); i++) {
+        /* Size if not currently used */
+        if (nodes[i].checksum == NODE_CHECKSUM)
+            kprintf("Name->%s\tID->%d\tLocation->%d\n", nodes[i].name, nodes[i].id, nodes[i].start_lba);
+    }
 }
