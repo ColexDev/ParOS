@@ -74,13 +74,13 @@ kmalloc(uint32_t size)
     uint32_t header_block = 0;
     uint32_t* start_addr  = 0;
 
-    struct block_header* header;
+    struct block_header header;
 
     if (size % BLOCK_SIZE)
         num_blocks = (size / BLOCK_SIZE) + 1;
 
-    header->size = num_blocks;
-    header->magic = HEAP_MAGIC;
+    header.size = num_blocks;
+    header.magic = HEAP_MAGIC;
 
     for (uint32_t i = 0; i < total_blocks; i++) {
         /* The frame is already taken */
@@ -108,7 +108,7 @@ kmalloc(uint32_t size)
     start_addr = (uint32_t*)((start_block * BLOCK_SIZE) + HEAP_START_ADDR);
 
     /* Set header */
-    memcpy(start_addr, header, sizeof(struct block_header));
+    memcpy(start_addr, &header, sizeof(struct block_header));
 
     return (void*)((uint32_t)start_addr + sizeof(struct block_header));
 }

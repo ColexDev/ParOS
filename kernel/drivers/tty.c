@@ -6,6 +6,7 @@
 #include "../timer/timer.h"
 #include "../stdlib/util.h"
 #include "../io/port_io.h"
+#include "../mm/kheap.h"
 
 size_t terminal_row;
 size_t terminal_column;
@@ -80,11 +81,12 @@ print_header()
         terminal_putentryat(os_name[i], vga_entry_color(VGA_COLOR_BLACK, VGA_COLOR_WHITE), i, 0);
     }
 
-    char time_str[9];
-    char date_str[9];
+    char date_str[11] = {0};
+    char time_str[11] = {0};
 
     get_time_string(time_str);
     get_date_string(date_str);
+
 
     /* - 1 allows space for a space between the date and time */
     size_t time_x_pos = VGA_WIDTH - strlen(time_str) - 1;

@@ -3,7 +3,6 @@
 #include "paging.h"
 #include "pmm.h"
 #include "../stdlib/util.h"
-#include "../stdlib/util.h"
 #include "../drivers/tty.h"
 
 uint32_t kernel_pdir[1024] __attribute__((aligned(PAGE_FRAME_SIZE)));

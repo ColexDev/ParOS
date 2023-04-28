@@ -15,5 +15,6 @@ char* strtok(char* str, const char* delim);
 char* kstrcat(char *a, char *b);
 int kprintf(char* fmt, ...);
 int ksprintf(char *buf, char *fmt, ...);
+char* kstrtok(char *str, char *delim);
 
 #endif

@@ -2,6 +2,7 @@
 
 #include "../io/port_io.h"
 #include "disk.h"
+#include "../stdlib/util.h"
 
 #define SECTOR_SIZE 512
 

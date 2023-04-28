@@ -111,11 +111,8 @@ void read_rtc() {
 void
 get_date_string(char* date_str)
 {
-    char buf[5];
+    char buf[5] = {0};
     read_rtc();
-
-    memset(buf, 0, 5);
-    memset(date_str, 0, strlen(date_str));
 
     itoa(year, buf, 10);
     kstrcat(date_str, buf);
@@ -142,11 +139,8 @@ get_date_string(char* date_str)
 void
 get_time_string(char* time_str)
 {
-    char buf[5];
+    char buf[5] = {0};
     read_rtc();
-
-    memset(buf, 0, 5);
-    memset(time_str, 0, strlen(time_str));
 
     /* My system clock is broken, -4 is just for me until I fix it :( */
     if (hour - 4 < 0) {

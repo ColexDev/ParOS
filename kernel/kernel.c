@@ -18,6 +18,7 @@
 #include "mm/kheap.h"
 #include "io/port_io.h"
 #include "drivers/disk.h"
+#include "fs/fs.h"
 
 void crash_me();
 void kernel_panic();
@@ -30,7 +31,7 @@ uint32_t curr_free_mem;
 void
 run_shell(multiboot_info_t* mbi)
 {
-    char shell_buf[50] = {0};
+    char shell_buf[100] = {0};
     uint8_t prompt_start = 0;
 
     puts("$ ");
@@ -75,6 +76,8 @@ run_shell(multiboot_info_t* mbi)
                 itoa(pmm_get_reserved_memory(), buf, 10);
                 puts(buf);
                 puts(" bytes\n");
+            } else if (!kstrcmp(shell_buf, "ls")) {
+                list_files();
             } else if (!kstrcmp(shell_buf, "exit")) {
                 break;
             } else {
@@ -99,7 +102,6 @@ run_shell(multiboot_info_t* mbi)
 void
 kernel_main(multiboot_info_t* mbi, uint32_t magic) 
 {
-    /* TODO: make a better kernel panic function */
     if (magic != MULTIBOOT_BOOTLOADER_MAGIC)
         kernel_panic();
 
@@ -111,51 +113,37 @@ kernel_main(multiboot_info_t* mbi, uint32_t magic)
     irq_install();
     timer_install();
     keyboard_install();
-    disable_blinking();
+    // disable_blinking();
     pmm_init();
     print_header();
     init_paging();
 
+    uint8_t contents[512];
+    uint8_t string[50] = "THIS IS A TEST OF THE FILE SYSTEM";
+
+    read_fs_header();
+    create_file("test.txt");
+    create_file("test2.txt");
+    create_file("test3.txt");
+    kprintf("OPENING %s...\n", "test2.txt");
+    uint32_t fd = open_file("test2.txt");
+    write_file(fd, string, strlen(string));
+    read_file(fd, contents, get_file_size(fd));
+    kprintf("CONTENTS OF FILE %s:\n\t %s\n", "test2.txt", contents);
+    write_fs_header();
+
+    // char* output;
+    // output = kstrtok(string, " ");
+    //
+    // while (output != NULL) {
+    //     kprintf(" %s\n", output);
+    //     output = kstrtok(NULL, " ");
+    // }
+
     /* I think this is just wrong? */
     // kprintf("Kernel Size: %d bytes\n", &kernel_end - &kernel_start);
 
-    // uint32_t* ptr = kmalloc(8);
-    // ptr[0] = 1;
-    // ptr[1] = 2;
-    // kprintf("kmalloc return addr: 0x%x\n", ptr);
-
-    // uint32_t* ptr2 = kmalloc(8);
-    // ptr2[0] = 3;
-    // ptr2[1] = 4;
-    // kprintf("kmalloc 2nd return addr: 0x%x\n", ptr2);
-
-    /* overwrites ptr2 header */
-    // ptr[2] = 8; /* overwrites ptr2 magic */
-    // ptr[3] = 9; /* overwrites ptr2 size  */
-
-    /* overwites ptr2 first index */
-    // ptr[4] = 10;
-
-    // for (uint32_t i = 0; i < 2; i++) {
-    //     kprintf("ptr[%d] = %d\tptr2[%d] = %d\n", i, ptr[i], i, ptr2[i]);
-    // }
-
-    /* This causes a division by 0 fault if i < 4???
-     * for both ptr and ptr2 */
-    // for (uint32_t i = 0; i < 3; i++) {
-    //     kprintf("&ptr[%d] = 0x%x\n", i, &ptr[i]);
-    // }
-
-    // kfree(ptr);
-    // kfree(ptr2);
-
     run_shell(mbi);
-
-    // print_header();
-    // delay(1000);
-    // puts("One second has passed...\n");
-
-    // crash_me();
 
     for(;;);
 }
