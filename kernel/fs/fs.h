@@ -27,8 +27,7 @@ struct __attribute__((packed)) directory_node {
 #define DATA_LBA_OFFSET  10
 #define NODES_LBA_OFFSET 6
 
-#define BYTES_IN_SECTOR 512
-#define BYTES_IN_FILE_NODE 32
+#define SECTOR_SIZE 512
 
 #define MAX_FILE_NODES 64
 

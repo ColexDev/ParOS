@@ -38,9 +38,9 @@ fs_get_frame(uint8_t* bitmap, uint32_t frame)
 void
 clear_sector(uint32_t lba)
 {
-    uint8_t* buffer = kmalloc(sizeof(uint8_t) * BYTES_IN_SECTOR);
+    uint8_t* buffer = kmalloc(sizeof(uint8_t) * SECTOR_SIZE);
 
-    for (int i = 0; i < BYTES_IN_SECTOR; i++) {
+    for (int i = 0; i < SECTOR_SIZE; i++) {
         buffer[i] = 0;
     }
 
@@ -98,7 +98,7 @@ create_file(char* name)
 void
 write_fs_header()
 {
-    uint8_t buffer[BYTES_IN_SECTOR] = {0};
+    uint8_t buffer[SECTOR_SIZE] = {0};
     uint8_t j = 0;
 
     /* Write node bitmap (64 bytes/1 sector) */
@@ -107,13 +107,13 @@ write_fs_header()
 
     /* Write data bitmap (2560 bytes/5 sectors) */
     for (uint8_t i = 1; i < NODES_LBA_OFFSET; i++) {
-        memcpy(buffer, &data_bitmap[(i - 1) * BYTES_IN_SECTOR], BYTES_IN_SECTOR);
+        memcpy(buffer, &data_bitmap[(i - 1) * SECTOR_SIZE], SECTOR_SIZE);
         ata_write_sector(i, buffer);
     }
 
     /* Write nodes (2048 bytes/4 sectors) */
     for (uint8_t i = NODES_LBA_OFFSET; i < DATA_LBA_OFFSET; i++) {
-        memcpy(buffer, &nodes[j], BYTES_IN_SECTOR);
+        memcpy(buffer, &nodes[j], SECTOR_SIZE);
         ata_write_sector(i, buffer);
         j += 32;
     }
@@ -122,7 +122,7 @@ write_fs_header()
 void
 read_fs_header()
 {
-    uint8_t buffer[BYTES_IN_SECTOR];
+    uint8_t buffer[SECTOR_SIZE];
     uint8_t j = 0;
 
     /* Read node bitmap (64 bytes/1 sector) */
@@ -132,13 +132,13 @@ read_fs_header()
     /* Read data bitmap (2560 bytes/5 sectors) */
     for (uint8_t i = 1; i < NODES_LBA_OFFSET; i++) {
         ata_read_sector(i, buffer);
-        memcpy(&data_bitmap[(i - 1) * BYTES_IN_SECTOR], buffer, BYTES_IN_SECTOR);
+        memcpy(&data_bitmap[(i - 1) * SECTOR_SIZE], buffer, SECTOR_SIZE);
     }
 
     /* Read nodes (2048 bytes/4 sectors) */
     for (uint8_t i = NODES_LBA_OFFSET; i < DATA_LBA_OFFSET; i++) {
         ata_read_sector(i, buffer);
-        memcpy(&nodes[j], buffer, BYTES_IN_SECTOR);
+        memcpy(&nodes[j], buffer, SECTOR_SIZE);
         j += 32;
     }
 }
@@ -161,7 +161,7 @@ open_file(char* name)
 void
 write_file(uint32_t id, uint8_t* contents, uint32_t count)
 {
-    uint32_t num_sectors = count / BYTES_IN_SECTOR;
+    uint32_t num_sectors = count / SECTOR_SIZE;
     struct file_node fd = nodes[id];
 
     if (num_sectors == 0) num_sectors = 1;
@@ -170,7 +170,7 @@ write_file(uint32_t id, uint8_t* contents, uint32_t count)
 
     /* FIXME: STARTS WRITING FROM BEGINNING */
     for (int i = 0; i < num_sectors; i++) {
-        ata_write_sector(fd.start_lba + i, &contents[i * BYTES_IN_SECTOR]);
+        ata_write_sector(fd.start_lba + i, &contents[i * SECTOR_SIZE]);
     }
 }
 
@@ -179,14 +179,14 @@ write_file(uint32_t id, uint8_t* contents, uint32_t count)
 void
 read_file(uint32_t id, uint8_t* buf, uint32_t count)
 {
-    uint32_t num_sectors = count / BYTES_IN_SECTOR;
+    uint32_t num_sectors = count / SECTOR_SIZE;
     struct file_node fd = nodes[id];
 
     if (num_sectors == 0) num_sectors = 1;
 
     /* FIXME: STARTS WRITING FROM BEGINNING */
     for (int i = 0; i < num_sectors; i++) {
-        ata_read_sector(fd.start_lba + i, &buf[i * BYTES_IN_SECTOR]);
+        ata_read_sector(fd.start_lba + i, &buf[i * SECTOR_SIZE]);
     }
 }
 
