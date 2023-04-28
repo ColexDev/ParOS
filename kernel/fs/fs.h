@@ -27,9 +27,20 @@ struct __attribute__((packed)) directory_node {
 #define DATA_LBA_OFFSET  10
 #define NODES_LBA_OFFSET 6
 
+#define BYTES_IN_SECTOR 512
+#define BYTES_IN_FILE_NODE 32
+
+#define MAX_FILE_NODES 64
+
+#define NODE_CHECKSUM 251
+
+
 void clear_sector(uint32_t lba);
 void create_file(char* name);
-struct file_node* open_file(char* name);
+uint32_t open_file(char* name);
 void write_fs_header();
 void read_fs_header();
 void list_files();
+void write_file(uint32_t id, uint8_t* contents, uint32_t count);
+void read_file(uint32_t id, uint8_t* buf, uint32_t count);
+uint32_t get_file_size(uint32_t id);

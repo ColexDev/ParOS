@@ -4,6 +4,7 @@
 
 #include "../stdlib/util.h"
 #include "../drivers/tty.h"
+#include "../mm/kheap.h"
 
 extern uint32_t curr_free_mem;
 
@@ -70,6 +71,78 @@ kstrcat(char *dest, char *src) {
       dest++;
     while (*dest++ = *src++);
     return rdest;
+}
+
+#define DICT_LEN 256
+
+int *create_delim_dict(char *delim)
+{
+	int *d = (int*)kmalloc(sizeof(int)*DICT_LEN);
+	memset((void*)d, 0, sizeof(int)*DICT_LEN);
+
+	int i;
+	for(i=0; i< strlen(delim); i++) {
+		d[delim[i]] = 1;
+	}
+	return d;
+}
+
+
+
+char*
+kstrtok(char *str, char *delim)
+{
+	
+	static char *last, *to_free;
+	int *deli_dict = create_delim_dict(delim);
+
+	if(!deli_dict) {
+	/*this check if we allocate and fail the second time with entering this function */
+		if(to_free) {
+		    kfree(to_free);
+		    to_free = NULL;
+		}
+		return NULL;
+	}
+
+	if(!deli_dict) {
+		
+		return NULL;
+	}
+
+	if(str) {
+		last = (char*)kmalloc(strlen(str)+1);
+		if(!last) {
+			kfree(deli_dict);
+			deli_dict = NULL;
+			return NULL;
+		}
+		to_free = last;
+		memcpy(last, str, strlen(str));
+	}
+
+	while(deli_dict[*last] && *last != '\0') {
+		last++;
+	}
+	str = last;
+	if(*last == '\0') {
+		kfree(deli_dict);
+		deli_dict = NULL;
+		kfree(to_free);
+		to_free = NULL;
+		return NULL;
+	}
+	while (*last != '\0' && !deli_dict[*last]) {
+		last++;
+	}
+	
+	*last = '\0';
+	last++;
+    if(deli_dict) {
+		kfree(deli_dict);
+	    deli_dict = NULL;
+	}
+	return str;
 }
 
 // void*
