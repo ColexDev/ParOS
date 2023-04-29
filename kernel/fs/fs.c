@@ -3,6 +3,7 @@
 #include "../drivers/disk.h"
 #include "../mm/kheap.h"
 #include "../stdlib/util.h"
+#include "../stdlib/bitmap/bitmap.h"
 #include "fs.h"
 
 /*
@@ -12,28 +13,9 @@
  * node_bitmap->data_bitmap->nodes->      data*/
 
 /* NOTE: Node bitmap is overkill for only storing 64 nodes, could be 8 bytes */
-uint8_t node_bitmap[64]                = {0};
-uint8_t data_bitmap[2560]              = {0};
+uint8_t node_bitmap[NODE_BITMAP_SIZE]  = {0};
+uint8_t data_bitmap[DATA_BITMAP_SIZE]  = {0};
 struct file_node nodes[MAX_FILE_NODES] = {0};
-
-void
-fs_set_frame(uint8_t* bitmap, uint32_t frame)
-{
-    bitmap[WORD_OFFSET(frame)] |= (1 << BIT_OFFSET(frame));
-}
-
-void
-fs_clear_frame(uint8_t* bitmap, uint32_t frame)
-{
-    bitmap[WORD_OFFSET(frame)] &= ~(1 << BIT_OFFSET(frame));
-}
-
-uint8_t
-fs_get_frame(uint8_t* bitmap, uint32_t frame)
-{
-    uint8_t ret = bitmap[WORD_OFFSET(frame)] & (1 << BIT_OFFSET(frame));
-    return ret != 0;
-}
 
 void
 clear_sector(uint32_t lba)
@@ -49,26 +31,6 @@ clear_sector(uint32_t lba)
     kfree(buffer);
 }
 
-uint32_t
-find_space(uint8_t* bitmap)
-{
-    for (uint32_t i = 0; i < 2560 * 8; i++) {
-        uint8_t byte = bitmap[i];
-
-        /* Move on if no 0 bits in byte */
-        if (byte == 0xFF)
-            continue;
-
-        /* Get rightmost 0 bit (free frame) */
-        uint8_t offset = __builtin_ctz(~byte);
-
-        /* Finds the frame number */
-        return i * WORD_LENGTH + offset;
-    }
-
-    return 0;
-}
-
 void
 create_file(char* name)
 {
@@ -81,18 +43,18 @@ create_file(char* name)
 
     memcpy(f_node.name, name, strlen(name));
     f_node.size = 0;
-    f_node.id   = find_space(node_bitmap);
-    f_node.start_lba = find_space(data_bitmap) + DATA_LBA_OFFSET;
+    f_node.id   = find_first_free_bit(node_bitmap, NODE_BITMAP_SIZE);
+    f_node.start_lba = find_first_free_bit(data_bitmap, DATA_BITMAP_SIZE) + DATA_LBA_OFFSET;
     f_node.checksum = NODE_CHECKSUM;
 
-    fs_set_frame(node_bitmap, find_space(node_bitmap));
+    set_bit(node_bitmap, find_first_free_bit(node_bitmap, NODE_BITMAP_SIZE));
 
     /* This is too complicated. 40 gives 50 lbas since we subtract 10 from i initally,
      * find a better way to do this */
     for (int i = f_node.start_lba - DATA_LBA_OFFSET; i < f_node.start_lba + 40; i++)
-        fs_set_frame(data_bitmap, i);
+        set_bit(data_bitmap, i);
     
-    nodes[find_space(node_bitmap) - 1] = f_node;
+    nodes[find_first_free_bit(node_bitmap, NODE_BITMAP_SIZE) - 1] = f_node;
 }
 
 void

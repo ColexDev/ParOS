@@ -20,10 +20,6 @@ struct __attribute__((packed)) directory_node {
     char name[22];
 };
 
-#define WORD_LENGTH    0x8
-#define WORD_OFFSET(b) ((b) / WORD_LENGTH)
-#define BIT_OFFSET(b)  ((b) % WORD_LENGTH)
-
 #define DATA_LBA_OFFSET  10
 #define NODES_LBA_OFFSET 6
 
@@ -33,6 +29,8 @@ struct __attribute__((packed)) directory_node {
 
 #define NODE_CHECKSUM 251
 
+#define NODE_BITMAP_SIZE 64
+#define DATA_BITMAP_SIZE 2560
 
 void clear_sector(uint32_t lba);
 void create_file(char* name);

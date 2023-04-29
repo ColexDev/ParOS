@@ -1,6 +1,7 @@
 #include <stdint.h>
 
 #include "../stdlib/util.h"
+#include "../stdlib/bitmap/bitmap.h"
 #include "../drivers/tty.h"
 #include "paging.h"
 #include "pmm.h"
@@ -38,78 +39,30 @@ pmm_get_reserved_memory()
 void
 pmm_set_frame(uint32_t frame)
 {
-    bitmap[WORD_OFFSET(frame)] |= (1 << BIT_OFFSET(frame));
+    set_bit(bitmap, frame);
 }
 
 void
 pmm_clear_frame(uint32_t frame)
 {
-    bitmap[WORD_OFFSET(frame)] &= ~(1 << BIT_OFFSET(frame));
+    clear_bit(bitmap, frame);
 }
 
 uint8_t
 pmm_get_frame(uint32_t frame)
 {
-    uint8_t ret = bitmap[WORD_OFFSET(frame)] & (1 << BIT_OFFSET(frame));
-    return ret != 0;
+    return get_bit(bitmap, frame);
 }
 
 uint32_t
-pmm_find_free_frames(uint32_t num_frames)
-{
-    uint32_t start_bit  = 0;
-    uint32_t free_frames = 0;
-
-    /* Goes through each individual bit */
-    for (uint32_t i = 0; i < SIZE_OF_BITMAP * 8; i++) {
-        /* The frame is already taken */
-        if (pmm_get_frame(i)) {
-            start_bit = i + 1;
-            free_frames = 0;
-            continue;
-        }
-
-        free_frames++;
-
-        /* Found it! */
-        if (free_frames == num_frames) {
-            return (WORD_OFFSET(start_bit) << 3) + BIT_OFFSET(start_bit);
-        }
-    }
-
-    return 0;
-}
-
-/* Returns the first free page frame */
-uint32_t
-pmm_find_free_frame()
-{
-    for (uint32_t i = 0; i < SIZE_OF_BITMAP; i++) {
-        uint8_t byte = bitmap[i];
-
-        /* Move on if no 0 bits in byte */
-        if (byte == 0xFF)
-            continue;
-
-        /* Get rightmost 0 bit (free frame) */
-        uint8_t offset = __builtin_ctz(~byte);
-
-        /* Finds the frame number */
-        return i * WORD_LENGTH + offset;
-    }
-
-    return 0;
-}
-
-void*
 pmm_alloc_frame()
 {
-    uint32_t frame = pmm_find_free_frame();
+    uint32_t frame = find_first_free_bit(bitmap, SIZE_OF_BITMAP);
     pmm_set_frame(frame);
 
     used_memory += PAGE_FRAME_SIZE;
 
-    return (void*)(frame * 0x1000);
+    return frame * 0x1000;
 }
 
 /* FIXME: Change this to identity mapping the kernel */

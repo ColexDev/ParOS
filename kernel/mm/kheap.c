@@ -4,6 +4,7 @@
 #include "pmm.h"
 #include "kheap.h"
 #include "../stdlib/util.h"
+#include "../stdlib/bitmap/bitmap.h"
 
 /* Size of bitmap: 
     * 8 byte block size means 0x20000 blocks per 1 MiB of heap.
@@ -41,26 +42,6 @@
 /* Move this off the stack eventually */
 static uint8_t bitmap[HEAP_START_SIZE / BLOCK_SIZE / 8] = {0};
 
-void
-set_frame(uint32_t frame)
-{
-    bitmap[WORD_OFFSET(frame)] |= (1 << BIT_OFFSET(frame));
-}
-
-void
-clear_frame(uint32_t frame)
-{
-    bitmap[WORD_OFFSET(frame)] &= ~(1 << BIT_OFFSET(frame));
-}
-
-uint8_t
-get_frame(uint32_t frame)
-{
-    uint8_t ret = bitmap[WORD_OFFSET(frame)] & (1 << BIT_OFFSET(frame));
-    return ret != 0;
-}
-
-
 /* When testing this, my first allocation should return 
  * 0xF0000008 since the header takes up the first block */
 void*
@@ -82,9 +63,10 @@ kmalloc(uint32_t size)
     header.size = num_blocks;
     header.magic = HEAP_MAGIC;
 
+    /* FIXME: Use the bitmap function here */
     for (uint32_t i = 0; i < total_blocks; i++) {
         /* The frame is already taken */
-        if (get_frame(i)) {
+        if (get_bit(bitmap, i)) {
             start_bit = i + 1;
             free_frames = 0;
             continue;
@@ -100,7 +82,7 @@ kmalloc(uint32_t size)
 
     /* Set the frame(s) as used */
     for (uint32_t block = 0; block < num_blocks + 1; block++) {
-        set_frame(start_block + block);
+        set_bit(bitmap, start_block + block);
     }
 
     /* Calculate the starting address of the block of memory, this is
@@ -130,7 +112,7 @@ kfree(void* ptr)
         return;
 
     for (uint32_t block = 0; block < header->size + 1; block++) {
-        clear_frame(start_block + block);
+        clear_bit(bitmap, start_block + block);
     }
 
     // kprintf("addr of ptr->0x%x\n", ptr);
