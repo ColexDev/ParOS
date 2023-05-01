@@ -34,27 +34,43 @@ clear_sector(uint32_t lba)
 void
 create_file(char* name)
 {
-    struct file_node f_node;
+    struct file_node f_node = {0};
 
     for (uint8_t i = 0; i < MAX_FILE_NODES; i++) {
         if (kstrcmp(nodes[i].name, name) == 0)
             return;
     }
 
-    memcpy(f_node.name, name, strlen(name));
+    memcpy(f_node.name, name, 21);
     f_node.size = 0;
     f_node.id   = find_first_free_bit(node_bitmap, NODE_BITMAP_SIZE);
     f_node.start_lba = find_first_free_bit(data_bitmap, DATA_BITMAP_SIZE) + DATA_LBA_OFFSET;
     f_node.checksum = NODE_CHECKSUM;
 
-    set_bit(node_bitmap, find_first_free_bit(node_bitmap, NODE_BITMAP_SIZE));
+    set_bit(node_bitmap, f_node.id);
 
     /* This is too complicated. 40 gives 50 lbas since we subtract 10 from i initally,
      * find a better way to do this */
     for (int i = f_node.start_lba - DATA_LBA_OFFSET; i < f_node.start_lba + 40; i++)
         set_bit(data_bitmap, i);
     
-    nodes[find_first_free_bit(node_bitmap, NODE_BITMAP_SIZE) - 1] = f_node;
+    nodes[f_node.id] = f_node;
+}
+
+void
+delete_file(char* name)
+{
+    uint32_t id = open_file(name);
+    if (id == 200)
+        return;
+
+    clear_bit(node_bitmap, id);
+
+    for (int i = nodes[id].start_lba - DATA_LBA_OFFSET; i < nodes[id].start_lba + 40; i++)
+        clear_bit(data_bitmap, i);
+
+    /* Invalidates the entry */
+    nodes[id].checksum++;
 }
 
 void
@@ -114,10 +130,10 @@ open_file(char* name)
         fd = nodes[j];
 
         if (kstrcmp(fd.name, name) == 0 && fd.checksum == NODE_CHECKSUM) {
-            break;
+            return fd.id;
         }
     }
-    return fd.id;
+    return 200;
 }
 
 void
@@ -128,10 +144,11 @@ write_file(uint32_t id, uint8_t* contents, uint32_t count)
 
     if (num_sectors == 0) num_sectors = 1;
 
-    nodes[id].size = strlen((char*)contents);
+    nodes[id].size = count;
 
     /* FIXME: STARTS WRITING FROM BEGINNING */
     for (int i = 0; i < num_sectors; i++) {
+        // clear_sector(fd.start_lba + i);
         ata_write_sector(fd.start_lba + i, &contents[i * SECTOR_SIZE]);
     }
 }
@@ -164,6 +181,6 @@ list_files()
     for (uint16_t i = 0; i < MAX_FILE_NODES; i++) {
         /* Size if not currently used */
         if (nodes[i].checksum == NODE_CHECKSUM)
-            kprintf("Name->%s\tID->%d\tLocation->%d\tSize->%d\n", nodes[i].name, nodes[i].id, nodes[i].start_lba, nodes[i].size);
+            kprintf("Name->%s | ID->%d | Location->%d | Size->%d\n", nodes[i].name, nodes[i].id, nodes[i].start_lba, nodes[i].size);
     }
 }

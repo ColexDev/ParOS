@@ -5,6 +5,7 @@
 #include "../stdlib/util.h"
 #include "../drivers/tty.h"
 #include "../mm/kheap.h"
+#include "../drivers/keyboard.h"
 
 extern uint32_t curr_free_mem;
 
@@ -73,6 +74,39 @@ kstrcat(char *dest, char *src) {
     return rdest;
 }
 
+char*
+kgets(void)
+{
+    char c = 0;
+    char* buf = kmalloc(sizeof(char*) * 100);
+    uint8_t prompt_start = get_cursor_x();
+    memset(buf, 0, 400);
+
+    for (;;) { 
+        c = 0;
+        while (!c) {
+            c = getchar();
+        }
+
+        if (c == '\n') {
+            putch('\n');
+            break;
+        } else if (c == 8) { /* Backspace */
+            /* Cannot delete prompt */
+            if (get_cursor_x() == prompt_start)
+                continue;
+            buf[strlen(buf) - 1] = '\0';
+            delch();
+        } else {
+            putch(c);
+            buf[strlen(buf)] = c;
+            buf[strlen(buf)] = '\0';
+        }
+
+    }
+    return buf;
+}
+
 #define DICT_LEN 256
 
 int *create_delim_dict(char *delim)
@@ -87,12 +121,9 @@ int *create_delim_dict(char *delim)
 	return d;
 }
 
-
-
 char*
 kstrtok(char *str, char *delim)
 {
-	
 	static char *last, *to_free;
 	int *deli_dict = create_delim_dict(delim);
 

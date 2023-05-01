@@ -16,5 +16,6 @@ char* kstrcat(char *a, char *b);
 int kprintf(char* fmt, ...);
 int ksprintf(char *buf, char *fmt, ...);
 char* kstrtok(char *str, char *delim);
+char* kgets(void);
 
 #endif

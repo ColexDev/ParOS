@@ -34,6 +34,7 @@ struct __attribute__((packed)) directory_node {
 
 void clear_sector(uint32_t lba);
 void create_file(char* name);
+void delete_file(char* name);
 uint32_t open_file(char* name);
 void write_fs_header();
 void read_fs_header();

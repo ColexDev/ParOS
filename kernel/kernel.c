@@ -1,5 +1,5 @@
-#include <stdint.h>
 
+#include <stdint.h>
 #include "interrupts/pic.h"
 #include "drivers/tty.h"
 #include "stdlib/util.h"
@@ -19,6 +19,7 @@
 #include "io/port_io.h"
 #include "drivers/disk.h"
 #include "fs/fs.h"
+#include "shell/shell.h"
 
 void crash_me();
 void kernel_panic();
@@ -46,15 +47,57 @@ run_shell(multiboot_info_t* mbi)
         }
 
         if (c == '\n') {
+            char* token = {0};
+            char* tokens[10] = {0};
+            uint8_t i = 0;
+
+            memset(tokens, 0, 80);
+            memset(token, 0, 8);
+            kstrcat(shell_buf, " ");
+            token = kstrtok(shell_buf, " ");
+            while (token != NULL) {
+                tokens[i] = token;
+                i++;
+                token = kstrtok(NULL, " ");
+            }
+            tokens[i] = NULL;
             puts("\n");
-            if (!kstrcmp(shell_buf, "credits")) {
+            if (!kstrcmp(tokens[0], "touch")) {
+                if (tokens[1] != NULL) {
+                    // tokens[1][strlen(tokens[1])] = '\0';
+                    read_fs_header();
+                    create_file(tokens[1]);
+                    write_fs_header();
+                }
+            } else if (!kstrcmp(tokens[0], "rm")) {
+                if (tokens[1] != NULL) {
+                    read_fs_header();
+                    delete_file(tokens[1]);
+                    write_fs_header();
+                }
+            } else if (!kstrcmp(tokens[0], "cat")) {
+                if (tokens[1] != NULL) {
+                    read_fs_header();
+                    uint8_t contents[512] = {0};
+                    uint32_t fd = open_file(tokens[1]);
+                    read_file(fd, contents, get_file_size(fd));
+                    kprintf("%s\n", contents);
+                }
+            } else if (!kstrcmp(tokens[0], "write")) {
+                if (tokens[1] != NULL) {
+                    read_fs_header();
+                    uint32_t fd = open_file(tokens[2]);
+                    write_file(fd, (uint8_t*)tokens[1], strlen(tokens[1]));
+                    write_fs_header();
+                }
+            } else if (!kstrcmp(shell_buf, "credits")) {
                 puts("\tParOS\n\tBy: ColexDev\n");
             } else if (!kstrcmp(shell_buf, "ping")) {
                 puts("pong!\n");
             } else if (!kstrcmp(shell_buf, "panic")) {
                 kprintf("Okay... You asked for it...\nPANIC\n");
                 kernel_panic();
-            } else if (!kstrcmp(shell_buf, "clear")) {
+            } else if (!kstrcmp(tokens[0], "clear")) {
                 clear_screen();
             } else if (!kstrcmp(shell_buf, "time")) {
                 char* time;
@@ -76,14 +119,17 @@ run_shell(multiboot_info_t* mbi)
                 itoa(pmm_get_reserved_memory(), buf, 10);
                 puts(buf);
                 puts(" bytes\n");
-            } else if (!kstrcmp(shell_buf, "ls")) {
+            } else if (!kstrcmp(tokens[0], "ls")) {
                 list_files();
             } else if (!kstrcmp(shell_buf, "exit")) {
                 break;
             } else {
                 puts("Error: Command not found\n");
             }
-            memset(shell_buf, 0, strlen(shell_buf));
+
+            kfree(token);
+            kfree(tokens);
+            memset(shell_buf, 0, 100);
             puts("$ ");
         } else if (c == 8) { /* Backspace */
             /* Cannot delete prompt */
@@ -125,11 +171,6 @@ kernel_main(multiboot_info_t* mbi, uint32_t magic)
     create_file("test.txt");
     create_file("test2.txt");
     create_file("test3.txt");
-    kprintf("OPENING %s...\n", "test2.txt");
-    uint32_t fd = open_file("test2.txt");
-    write_file(fd, string, strlen(string));
-    read_file(fd, contents, get_file_size(fd));
-    kprintf("CONTENTS OF FILE %s:\n\t %s\n", "test2.txt", contents);
     write_fs_header();
 
     // char* output;
@@ -143,7 +184,7 @@ kernel_main(multiboot_info_t* mbi, uint32_t magic)
     /* I think this is just wrong? */
     // kprintf("Kernel Size: %d bytes\n", &kernel_end - &kernel_start);
 
-    run_shell(mbi);
+    shell_loop(mbi);
 
     for(;;);
 }

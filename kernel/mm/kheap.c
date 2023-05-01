@@ -47,6 +47,7 @@ static uint8_t bitmap[HEAP_START_SIZE / BLOCK_SIZE / 8] = {0};
 void*
 kmalloc(uint32_t size)
 {
+    // kprintf("IN MALLOC FOR SIZE %d\n", size);
     uint32_t num_blocks   = size / BLOCK_SIZE;
     uint32_t total_blocks = HEAP_START_SIZE / BLOCK_SIZE;
     uint32_t free_frames  = 0;
