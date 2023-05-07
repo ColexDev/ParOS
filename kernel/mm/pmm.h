@@ -19,6 +19,8 @@
 void pmm_init();
 uint32_t pmm_get_used_memory();
 uint32_t pmm_get_reserved_memory();
+void pmm_decrement_used_memory(uint32_t n);
+void pmm_increment_used_memory(uint32_t n);
 
 uint32_t pmm_alloc_frame();
 

@@ -5,7 +5,7 @@
  * 1638 directories and 26214 files */
 
 struct __attribute__((packed)) file_node {
-    uint32_t size; /* In lba's */
+    uint32_t size; /* In byte's */
     uint32_t start_lba;
     uint16_t id;
     uint8_t checksum;
@@ -19,6 +19,16 @@ struct __attribute__((packed)) directory_node {
     char timestamp[14]; /* YYYYMMDDHHMMSS */
     char name[22];
 };
+
+struct file_descriptor {
+    uint32_t size;
+    uint32_t offset;
+    uint16_t id;
+    uint8_t  flags;
+};
+
+#define FILE_OVERWRITE_FLAG 0
+#define FILE_APPEND_FLAG    1
 
 #define DATA_LBA_OFFSET  10
 #define NODES_LBA_OFFSET 6
@@ -35,7 +45,7 @@ struct __attribute__((packed)) directory_node {
 void clear_sector(uint32_t lba);
 void create_file(char* name);
 void delete_file(char* name);
-uint32_t open_file(char* name);
+uint32_t open_file(char* name, uint8_t flags);
 void write_fs_header();
 void read_fs_header();
 void list_files();

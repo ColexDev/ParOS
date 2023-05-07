@@ -5,11 +5,10 @@
 #include "../stdlib/util.h"
 #include "../drivers/tty.h"
 
-uint32_t kernel_pdir[1024] __attribute__((aligned(PAGE_FRAME_SIZE)));
-uint32_t first_page_table[1024] __attribute__((aligned(PAGE_FRAME_SIZE)));
+static uint32_t kernel_pdir[1024] __attribute__((aligned(PAGE_FRAME_SIZE)));
+static uint32_t first_page_table[1024] __attribute__((aligned(PAGE_FRAME_SIZE)));
 
-extern uint32_t used_memory;
-uint8_t paging_enabled = 0;
+static uint8_t paging_enabled = 0;
 
 void
 map_page(uint32_t virt, uint32_t phys)
@@ -38,7 +37,6 @@ map_page(uint32_t virt, uint32_t phys)
     /* NOTE: PHYS is basically not used now, CANNOT choose a physical PAGE_TABLE_ADDRESS_MASK
      * unless this is setup in an else under if (phys == 0) */
     // pmm_set_frame(phys / 0x1000);
-    // used_memory += 4096;
 
     if (paging_enabled)
         *((uint32_t*)page_table) = phys | 3;

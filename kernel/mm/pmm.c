@@ -6,16 +6,13 @@
 #include "paging.h"
 #include "pmm.h"
 
-uint32_t used_memory = 0;
-uint32_t reserved_memory = 0;
+static uint32_t used_memory = 0;
+static uint32_t reserved_memory = 0;
 
 /* I stg I am going schitzo */
 
-/* FIXME: SET THIS */
-uint32_t KERNEL_SIZE = 1; 
-
 /* Length of page frame will always be 4096 bytes (4KiB) (0x1000) */
-uint8_t bitmap[SIZE_OF_BITMAP] = {0};
+static uint8_t bitmap[SIZE_OF_BITMAP] = {0};
 /* 
  *   76543210
  * 1 00010100

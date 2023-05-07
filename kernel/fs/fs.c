@@ -17,18 +17,14 @@ uint8_t node_bitmap[NODE_BITMAP_SIZE]  = {0};
 uint8_t data_bitmap[DATA_BITMAP_SIZE]  = {0};
 struct file_node nodes[MAX_FILE_NODES] = {0};
 
+struct file_descriptor open_files[MAX_FILE_NODES] = {0};
+
 void
 clear_sector(uint32_t lba)
 {
-    uint8_t* buffer = kmalloc(sizeof(uint8_t) * SECTOR_SIZE);
-
-    for (int i = 0; i < SECTOR_SIZE; i++) {
-        buffer[i] = 0;
-    }
+    uint8_t buffer[SECTOR_SIZE] = {0};
 
     ata_write_sector(lba, buffer);
-
-    kfree(buffer);
 }
 
 void
@@ -60,7 +56,7 @@ create_file(char* name)
 void
 delete_file(char* name)
 {
-    uint32_t id = open_file(name);
+    uint32_t id = open_file(name, 0);
     if (id == 200)
         return;
 
@@ -121,35 +117,59 @@ read_fs_header()
     }
 }
 
-uint32_t
-open_file(char* name)
+void
+open_file_entry(uint32_t id, uint8_t flags)
 {
-    struct file_node fd;
+    struct file_node fn = nodes[id];
+    struct file_descriptor* fd = &open_files[id];
+
+    fd->id = id;
+    fd->size = fn.size;
+    fd->flags = flags;
+    fd->offset = 0;
+}
+
+uint32_t
+open_file(char* name, uint8_t flags)
+{
+    struct file_node fn;
 
     for (int j = 0; j < MAX_FILE_NODES; j++) {
-        fd = nodes[j];
+        fn = nodes[j];
 
-        if (kstrcmp(fd.name, name) == 0 && fd.checksum == NODE_CHECKSUM) {
-            return fd.id;
+        if (kstrcmp(fn.name, name) == 0 && fn.checksum == NODE_CHECKSUM) {
+            open_file_entry(fn.id, flags);
+            return fn.id;
         }
     }
-    return 200;
 }
 
 void
 write_file(uint32_t id, uint8_t* contents, uint32_t count)
 {
     uint32_t num_sectors = count / SECTOR_SIZE;
-    struct file_node fd = nodes[id];
+    struct file_node* fn = &nodes[id];
+    struct file_descriptor fd = open_files[id];
 
     if (num_sectors == 0) num_sectors = 1;
 
-    nodes[id].size = count;
+    /* Append instead of overwriting */
+    if (fd.flags & FILE_APPEND_FLAG) {
+        uint8_t buf[SECTOR_SIZE * num_sectors];
+        uint32_t file_size_sectors = get_file_size(id) / SECTOR_SIZE;
+        uint32_t last_sector_size = get_file_size(id) % SECTOR_SIZE;
 
-    /* FIXME: STARTS WRITING FROM BEGINNING */
-    for (int i = 0; i < num_sectors; i++) {
-        // clear_sector(fd.start_lba + i);
-        ata_write_sector(fd.start_lba + i, &contents[i * SECTOR_SIZE]);
+        fn->size += count;
+        ata_read_sector(fn->start_lba + file_size_sectors, buf);
+        memcpy(&buf[last_sector_size], contents, count);
+        for (int i = 0; i < num_sectors; i++) {
+            ata_write_sector(fn->start_lba + i, &buf[i * SECTOR_SIZE]);
+        }
+    } else {
+        fn->size = count;
+        for (int i = 0; i < num_sectors; i++) {
+            ata_write_sector(fn->start_lba + i, &contents[i * SECTOR_SIZE]);
+        }
     }
 }
 
@@ -159,13 +179,12 @@ void
 read_file(uint32_t id, uint8_t* buf, uint32_t count)
 {
     uint32_t num_sectors = count / SECTOR_SIZE;
-    struct file_node fd = nodes[id];
+    struct file_node fn = nodes[id];
 
     if (num_sectors == 0) num_sectors = 1;
 
-    /* FIXME: STARTS WRITING FROM BEGINNING */
     for (int i = 0; i < num_sectors; i++) {
-        ata_read_sector(fd.start_lba + i, &buf[i * SECTOR_SIZE]);
+        ata_read_sector(fn.start_lba + i, &buf[i * SECTOR_SIZE]);
     }
 }
 
@@ -179,7 +198,6 @@ void
 list_files()
 {
     for (uint16_t i = 0; i < MAX_FILE_NODES; i++) {
-        /* Size if not currently used */
         if (nodes[i].checksum == NODE_CHECKSUM)
             kprintf("Name->%s | ID->%d | Location->%d | Size->%d\n", nodes[i].name, nodes[i].id, nodes[i].start_lba, nodes[i].size);
     }

@@ -6,8 +6,6 @@
 
 #define KERNEL_START 0x100000 /* 1 MiB */
 
-extern uint32_t curr_free_mem;
-
 uint32_t total_bytes_ram;
 
 void
