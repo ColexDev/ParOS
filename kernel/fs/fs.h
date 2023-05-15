@@ -5,13 +5,13 @@
  * 1638 directories and 26214 files */
 
 struct __attribute__((packed)) file_node {
-    uint32_t size; /* In byte's */
-    uint32_t start_lba;
-    uint16_t id;
     uint8_t checksum;
-    // uint16_t dir_id;
+    uint32_t size; /* In byte's */
+    uint16_t id;
+    uint8_t type; /* TYPE_FILE or TYPE_DIRECTORY */
     // char timestamp[14]; /* YYYYMMDDHHMMSS */
-    char name[21];
+    uint32_t pointers[25]; /* each points to a sector, supports 12.8kb files */
+    char name[20];
 };
 
 struct __attribute__((packed)) directory_node {
@@ -37,9 +37,12 @@ struct file_descriptor {
 
 #define MAX_FILE_NODES 64
 
-#define NODE_CHECKSUM 251
+#define NODE_CHECKSUM 251 /* 0xfb */
 
-#define NODE_BITMAP_SIZE 64
+#define TYPE_FILE      0
+#define TYPE_DIRECTORY 1
+
+#define NODE_BITMAP_SIZE 8
 #define DATA_BITMAP_SIZE 2560
 
 void clear_sector(uint32_t lba);

@@ -122,3 +122,27 @@ kfree(void* ptr)
     // kprintf("Size->%d\n", header->size);
     // kprintf("After free bitmap: %d\n", bitmap[0]);
 }
+
+void*
+krealloc(void* ptr, uint32_t size)
+{
+    void* new_ptr = kmalloc(size);
+    uint32_t copy_size = size;
+
+    if (copy_size > ksize(ptr)) {
+        copy_size = ksize(ptr);
+    }
+
+    memcpy(new_ptr, ptr, copy_size);
+
+    kfree(ptr);
+
+    return new_ptr;
+}
+
+uint32_t
+ksize(void* ptr)
+{
+    struct block_header* header = ptr - sizeof(struct block_header);
+    return header->size;
+}

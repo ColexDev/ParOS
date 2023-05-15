@@ -51,7 +51,7 @@ shell_execute(char** args, multiboot_info_t* mbi)
     } else if (!kstrcmp(args[0], "cat")) {
         if (args[1] != NULL) {
             read_fs_header();
-            uint8_t contents[512] = {0};
+            uint8_t contents[1024] = {0};
             uint32_t fd = open_file(args[1], FILE_OVERWRITE_FLAG);
             read_file(fd, contents, get_file_size(fd));
             kprintf("%s\n", contents);
@@ -93,6 +93,7 @@ shell_execute(char** args, multiboot_info_t* mbi)
         puts(buf);
         puts(" bytes\n");
     } else if (!kstrcmp(args[0], "ls")) {
+        read_fs_header();
         list_files();
     } else if (!kstrcmp(args[0], "exit")) {
     } else {

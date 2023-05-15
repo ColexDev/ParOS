@@ -18,6 +18,8 @@ struct __attribute__((packed)) block_header {
 };
 
 void* kmalloc(uint32_t size);
+void* krealloc(void* ptr, uint32_t size);
 void kfree(void* ptr);
+uint32_t ksize(void* ptr);
 
 #endif /* #ifndef KHEAP_H */
