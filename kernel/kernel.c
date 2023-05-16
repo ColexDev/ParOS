@@ -104,18 +104,6 @@ kernel_main(multiboot_info_t* mbi, uint32_t magic)
     print_header();
     init_paging();
 
-    uint8_t buf[511];
-    for (int i = 0; i < 511; i++) {
-        buf[i] = 'a';
-    }
-
-    create_file("new_file.txt");
-    write_fs_header();
-    read_fs_header();
-    uint32_t fd = open_file("new_file.txt", FILE_OVERWRITE_FLAG);
-    write_file(fd, (uint8_t*)buf, 511);
-    write_fs_header();
-
     // text_editor("test.txt");
 
     /* I think this is just wrong? */
