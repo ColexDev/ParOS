@@ -27,6 +27,6 @@
 #define PAGE_TABLE_ADDRESS_MASK ~0xFFF
 
 void init_paging();
-uint32_t get_page(uint32_t virt, uint8_t make);
+uint32_t get_page(uint32_t virt);
 void alloc_page(uint32_t* page, uint8_t is_kernel, uint8_t is_writeable);
 void create_page_table(uint32_t virt);

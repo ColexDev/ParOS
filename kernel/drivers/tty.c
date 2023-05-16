@@ -8,13 +8,12 @@
 #include "../io/port_io.h"
 #include "../mm/kheap.h"
 
-size_t terminal_row;
-size_t terminal_column;
-uint8_t terminal_color;
-volatile uint16_t* terminal_buffer;
+static size_t terminal_row;
+static size_t terminal_column;
+static uint8_t terminal_color;
+static volatile uint16_t* terminal_buffer;
 
 static const uint16_t* VGA_MEMORY_START = (uint16_t*) 0xB8000;
-// static const uint32_t* VGA_MEMORY_START = (uint32_t*) 0xC00B8000;
 
 /* FIX: Just VGA_HEIGHT * VGA_WIDTH is NOT enough space,
  * the 8 is a temp fix (probs too big) until I do the math */
@@ -86,7 +85,6 @@ print_header()
 
     get_time_string(time_str);
     get_date_string(date_str);
-
 
     /* - 1 allows space for a space between the date and time */
     size_t time_x_pos = VGA_WIDTH - strlen(time_str) - 1;

@@ -16,16 +16,21 @@ ParOS is a hobby operating system that I am working on to learn operating system
 
 ## Features
 - [x] Printing to the screen
-- [x] GDT
 - [x] Interrupts
 - [x] Timer
 - [x] Keyboard driver
 - [x] Physical memory management
 - [x] Virtual memory management (paging)
 - [x] Heap (malloc and free)
+- [x] Filesystem
 - [ ] Multiprocessing
-- [ ] Filesystem
+
+## Applications
+- [ ] Text Editor
+- [ ] Compiler
 - [ ] Shell
+- [ ] TUI/tmux-like interface
+- [ ] Considering writing a language to run on ParOS
 
 ## Name
 The name comes from the small greek island [Paros](https://en.wikipedia.org/wiki/Paros).

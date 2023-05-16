@@ -9,7 +9,6 @@
  */
 #define MAX_NUM_OF_PAGE_FRAMES 0x100000  /* 1 MiB */
 /* NOTE: Switching this to 32 may improve performance */
-#define WORD_LENGTH            0x8
 #define SIZE_OF_BITMAP         MAX_NUM_OF_PAGE_FRAMES / WORD_LENGTH
 #define KERNEL_START           0x100000  /* 1 MiB */
 #define PAGE_FRAME_SIZE        4096      /* 4 KiB */
@@ -20,11 +19,9 @@
 void pmm_init();
 uint32_t pmm_get_used_memory();
 uint32_t pmm_get_reserved_memory();
+void pmm_decrement_used_memory(uint32_t n);
+void pmm_increment_used_memory(uint32_t n);
 
-void pmm_set_frame(uint32_t frame);
-void pmm_clear_frame(uint32_t frame);
-uint32_t pmm_find_free_frame();
-uint32_t pmm_find_free_frames(uint32_t num_frames);
-void* pmm_alloc_frame();
+uint32_t pmm_alloc_frame();
 
 #endif /* #ifndef PMM_H */

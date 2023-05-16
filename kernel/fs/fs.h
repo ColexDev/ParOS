@@ -5,13 +5,13 @@
  * 1638 directories and 26214 files */
 
 struct __attribute__((packed)) file_node {
-    uint32_t size; /* In lba's */
-    uint32_t start_lba;
-    uint16_t id;
     uint8_t checksum;
-    // uint16_t dir_id;
+    uint32_t size; /* In byte's */
+    uint16_t id;
+    uint8_t type; /* TYPE_FILE or TYPE_DIRECTORY */
     // char timestamp[14]; /* YYYYMMDDHHMMSS */
-    char name[21];
+    uint32_t pointers[25]; /* each points to a sector, supports 12.8kb files */
+    char name[20];
 };
 
 struct __attribute__((packed)) directory_node {
@@ -20,24 +20,35 @@ struct __attribute__((packed)) directory_node {
     char name[22];
 };
 
-#define WORD_LENGTH    0x8
-#define WORD_OFFSET(b) ((b) / WORD_LENGTH)
-#define BIT_OFFSET(b)  ((b) % WORD_LENGTH)
+struct file_descriptor {
+    uint32_t size;
+    uint32_t offset;
+    uint16_t id;
+    uint8_t  flags;
+};
+
+#define FILE_OVERWRITE_FLAG 0
+#define FILE_APPEND_FLAG    1
 
 #define DATA_LBA_OFFSET  10
 #define NODES_LBA_OFFSET 6
 
-#define BYTES_IN_SECTOR 512
-#define BYTES_IN_FILE_NODE 32
+#define SECTOR_SIZE 512
 
 #define MAX_FILE_NODES 64
 
-#define NODE_CHECKSUM 251
+#define NODE_CHECKSUM 251 /* 0xfb */
 
+#define TYPE_FILE      0
+#define TYPE_DIRECTORY 1
+
+#define NODE_BITMAP_SIZE 8
+#define DATA_BITMAP_SIZE 2560
 
 void clear_sector(uint32_t lba);
 void create_file(char* name);
-uint32_t open_file(char* name);
+void delete_file(char* name);
+uint32_t open_file(char* name, uint8_t flags);
 void write_fs_header();
 void read_fs_header();
 void list_files();
