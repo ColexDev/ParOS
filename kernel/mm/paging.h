@@ -6,8 +6,8 @@
 
 #define KERNEL_PHYS_BASE  0x100000
 #define KERNEL_VIRT_BASE  0xC0000000
-#define KERNEL_HEAP_START 0xE0000000
-#define KERNEL_HEAP_END   0xF0000000
+#define KERNEL_HEAP_START 0xF0000000
+#define KERNEL_HEAP_END   0xFFBFFFFF
 #define VMM_PAGE_TABLES   0xFFC00000
 #define VMM_PAGE_DIR      0xFFFFF000
 
@@ -30,3 +30,8 @@ void init_paging();
 uint32_t get_page(uint32_t virt);
 void alloc_page(uint32_t* page, uint8_t is_kernel, uint8_t is_writeable);
 void create_page_table(uint32_t virt);
+void enable_paging(uint32_t* page_directory);
+uint32_t* create_page_directory();
+void map_kernel_into_page_directory(uint32_t* page_directory);
+void set_page_directory(uint32_t* page_dir);
+void use_global_page_directory(uint8_t enabled);

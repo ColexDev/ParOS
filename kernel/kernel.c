@@ -101,15 +101,38 @@ kernel_main(multiboot_info_t* mbi, uint32_t magic)
     keyboard_install();
     // disable_blinking();
     pmm_init();
-    print_header();
+    // print_header();
     init_paging();
+    uint32_t* new_proc_page_dir = create_page_directory();
+    // static uint32_t new_proc_page_dir[1024] __attribute__((aligned(PAGE_FRAME_SIZE)));
+    // uint32_t* new_proc_page_dir = (uint32_t*)pmm_alloc_frame();
+    // uint32_t* first_page_table = (uint32_t*)pmm_alloc_frame();
+    // // static uint32_t first_page_table[1024] __attribute__((aligned(PAGE_FRAME_SIZE)));
+    //
+    // for(uint16_t i = 0; i < 1024; i++) {
+    //     new_proc_page_dir[i] = 2; // attribute set to: supervisor level, read/write, not present(010 in binary)
+    // }
+    // /* Setup recursive paging */
+    // new_proc_page_dir[1023] = ((uint32_t)new_proc_page_dir) | 3;
+    //
+    // /* Set first page table */
+    // new_proc_page_dir[0] = (uint32_t)first_page_table | 3;
 
-    // text_editor("test.txt");
+    set_page_directory(new_proc_page_dir);
+
+    use_global_page_directory(1);
+
+    map_kernel_into_page_directory(new_proc_page_dir);
+
+    use_global_page_directory(0);
+
+    enable_paging(new_proc_page_dir);
+    kprintf("New page directory is set and paging is enabled\n");
 
     /* I think this is just wrong? */
     // kprintf("Kernel Size: %d bytes\n", &kernel_end - &kernel_start);
 
-    shell_loop(mbi);
+    // shell_loop(mbi);
 
     for(;;);
 }
