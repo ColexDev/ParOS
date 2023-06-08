@@ -23,5 +23,6 @@ void pmm_decrement_used_memory(uint32_t n);
 void pmm_increment_used_memory(uint32_t n);
 
 uint32_t pmm_alloc_frame();
+void pmm_set_frame(uint32_t frame);
 
 #endif /* #ifndef PMM_H */
