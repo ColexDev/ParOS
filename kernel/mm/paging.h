@@ -29,7 +29,7 @@
 void init_paging();
 uint32_t get_page(uint32_t virt);
 void alloc_page(uint32_t* page, uint8_t is_kernel, uint8_t is_writeable);
-void create_page_table(uint32_t virt);
+void create_page_table(uint32_t virt, uint32_t* page_directory);
 void enable_paging(uint32_t* page_directory);
 uint32_t* create_page_directory();
 void map_kernel_into_page_directory(uint32_t* page_directory);
