@@ -24,16 +24,20 @@ map_page(uint32_t virt, uint32_t phys, uint8_t get_phys)
     uint32_t page_table;
 
     if (!(page_directory_ptr[PAGE_DIRECTORY_INDEX(virt)] & 1)) {
+        kprintf("Creating page table\n");
         create_page_table(virt, page_directory_ptr);
     }
 
     if (get_phys) {
         phys = pmm_alloc_frame();
+        kprintf("Getting phys address\n");
     } else {
         pmm_set_frame(phys / 0x1000);
+        kprintf("Setting phys frame\n");
     }
 
-    page_table = (page_directory_ptr[PAGE_DIRECTORY_INDEX(virt)] & PAGE_TABLE_ADDRESS_MASK);
+    kprintf("mapping virt 0x%x to phys 0x%x\n", virt, phys);
+    page_table = (page_directory_ptr[PAGE_DIRECTORY_INDEX(virt)] & PAGE_STRUCTURE_ADDRESS_MASK);
 
     ((uint32_t*)page_table)[PAGE_TABLE_INDEX(virt)] = phys | 3;
 
@@ -48,9 +52,7 @@ create_page_table(uint32_t virt, uint32_t* page_directory)
 
     page_directory[PAGE_DIRECTORY_INDEX(virt)] = (new_table * PAGE_SIZE) | 3;
 
-    for (int i = 0; i < PAGES_PER_TABLE; i++) {
-        ((uint32_t*)new_table)[i] = 0;
-    }
+    memset((uint32_t*)new_table, 0, PAGES_PER_TABLE);
 }
 
 /* This needs to return 0 if not present, or some special value */
@@ -60,17 +62,17 @@ get_page(uint32_t virt)
     uint32_t page;
     uint32_t page_table;
 
-    page_table = (page_directory_ptr[PAGE_DIRECTORY_INDEX(virt)] & PAGE_TABLE_ADDRESS_MASK);
+    page_table = (page_directory_ptr[PAGE_DIRECTORY_INDEX(virt)] & PAGE_STRUCTURE_ADDRESS_MASK);
 
     /* Remove control bits, this gets the tables address */
-    page_table &= PAGE_TABLE_ADDRESS_MASK;
+    page_table &= PAGE_STRUCTURE_ADDRESS_MASK;
 
     /* I think I should always do this one, the above just gets 
      * the first entry in the page table */
     page = ((uint32_t*)page_table)[PAGE_TABLE_INDEX(virt)];
 
     /* Remove control bits, this gets the pages address */
-    page &= PAGE_TABLE_ADDRESS_MASK;
+    page &= PAGE_STRUCTURE_ADDRESS_MASK;
 
     return page;
 }
@@ -98,24 +100,26 @@ enable_paging(uint32_t* page_directory)
 uint32_t*
 create_page_directory()
 {
-    uint32_t* page_directory = (uint32_t*)pmm_alloc_frame();
-    uint32_t* first_page_table = (uint32_t*)pmm_alloc_frame();
+    // uint32_t* page_directory = (uint32_t*)pmm_alloc_frame();
+    uint32_t* page_directory = (uint32_t*)0xFF000000;
+    kprintf("PAGE DIR ADDR PHYS: 0x%x\n", page_directory);
+    // map_page((uint32_t)page_directory, (uint32_t)page_directory, 0);
+    map_page(0xFF000000, 0, 1);
+    kprintf("After map\n");
 
-    for(uint16_t i = 0; i < TABLES_PER_DIR; i++) {
-        page_directory[i] = 2; // attribute set to: supervisor level, read/write, not present(010 in binary)
-    }
-    /* Setup recursive paging */
-    page_directory[1023] = ((uint32_t)page_directory) | 3;
+    // memset(page_directory, 2, TABLES_PER_DIR); /* attribute set to: supervisor level, read/write, not present(010 in binary) */
+    //
+    // /* Setup recursive paging */
+    // page_directory[1023] = ((uint32_t)page_directory) | 3;
+    //
+    // /* Set first page table */
+    // page_directory[0] = (uint32_t)first_page_table | 3;
 
-    /* Set first page table */
-    page_directory[0] = (uint32_t)first_page_table | 3;
+    memcpy(page_directory, kernel_pdir_static, PAGE_SIZE);
 
     return page_directory;
 }
 
-/* TODO: Set a fixed area in physical memory for the heap since every
- * process needs to access the same PHYSICAL memory from the same virtual
- * addresses */
 void
 map_kernel_into_page_directory(uint32_t* page_directory)
 {
@@ -134,9 +138,8 @@ void
 init_paging()
 {
     /* Sets all page tables to not present */
-    for(uint16_t i = 0; i < TABLES_PER_DIR; i++) {
-        kernel_pdir_static[i] = 2; // attribute set to: supervisor level, read/write, not present(010 in binary)
-    }
+    memset(kernel_pdir_static, 2, TABLES_PER_DIR); /* attribute set to: supervisor level, read/write, not present(010 in binary) */
+
     /* Setup recursive paging */
     kernel_pdir_static[1023] = ((uint32_t)kernel_pdir_static) | 3;
 

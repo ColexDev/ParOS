@@ -20,6 +20,7 @@
 #include "drivers/disk.h"
 #include "fs/fs.h"
 #include "shell/shell.h"
+#include "proc/proc.h"
 
 void crash_me();
 void kernel_panic();
@@ -99,28 +100,14 @@ kernel_main(multiboot_info_t* mbi, uint32_t magic)
     irq_install();
     timer_install();
     keyboard_install();
-    // disable_blinking();
     pmm_init();
     print_header();
     init_paging();
-    // uint32_t* new_proc_page_dir = create_page_directory();
-    //
-    // set_page_directory(new_proc_page_dir);
-    // //
-    // use_global_page_directory(1);
-    // //
-    // map_kernel_into_page_directory(new_proc_page_dir);
-    // //
-    // use_global_page_directory(0);
-    //
-    // enable_paging(new_proc_page_dir);
-    // kprintf("New page directory is set and paging is enabled\n");
 
     /* I think this is just wrong? */
     // kprintf("Kernel Size: %d bytes\n", &kernel_end - &kernel_start);
 
-    // uint32_t* test = kmalloc(8);
-
+    scheduler();
     // shell_loop(mbi);
 
     for(;;);
