@@ -55,17 +55,15 @@ uint8_t
 create_process(void (*runner)())
 {
     struct pcb* proc = kmalloc(sizeof(struct pcb));
-    kprintf("Mallocing\n");
     struct general_registers* regs = kmalloc(sizeof(struct general_registers));
-    kprintf("Past\n");
 
     memset(regs, 0, sizeof(struct general_registers));
 
     proc->pid = find_next_pid();
     proc->used_quantum_ms = 0;
-    kprintf("New page dir\n");
+    kprintf("Creating dir\n");
     proc->page_directory = create_page_directory();
-    kprintf("After\n");
+    kprintf("after Creating dir\n");
 
     proc->runner = runner;
 
@@ -95,10 +93,20 @@ destroy_process(struct pcb* proc)
 uint8_t
 context_switch(struct pcb* old_proc, struct pcb* new_proc)
 {
+    kprintf("old ebx: 0x%x\tnew ebx: 0x%x\n", old_proc->regs->ebx, new_proc->regs->ebx);
+    static int first = 1;
+    kprintf("Saving old regs\n");
     save_pcb_regs(old_proc->regs);
     old_proc->state = PROCESS_READY;
     old_proc->used_quantum_ms = 0;
-    restore_pcb_regs(new_proc->regs);
+    kprintf("Loading new regs\n");
+    if (first) {
+        restore_pcb_regs(old_proc->regs);
+        first = 0;
+    }
+    else
+        restore_pcb_regs(new_proc->regs);
+    kprintf("Running\n");
     new_proc->runner();
 }
 

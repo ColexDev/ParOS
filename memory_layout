@@ -1,0 +1,30 @@
+System memory layout (VIRTUAL ADDRESSES):
+
+SYSTEM/RESERVED:
+-----------------------
+0x0        - 0x400000   Identity Mapped
+
+USER:
+-----------------------
+0xAFFF7FFF - 0xAFFFFFFF User Stack (32 KiB)
+0xB0000000 - 0xBFBFFFFF User Heap
+0xBFC00000 - 0xBFFFFFFF User Page Tables
+
+KERNEL:
+-----------------------
+0xC0000000              Start
+0xF0000000 - 0xF0A00000 Kernel Heap (10 MiB)
+0xFFC00000 - 0xFFFFFFFF Kernel Page Tables
+
+
+Only support 512 MiB of usable memory.
+Max 4 processes:
+    - Heap 10 MiB
+    - Stack 32 KiB
+    - Paging structures 4 MiB
+    - Therefore a processes max size is only slightly over 14 MiB
+Maybe have a value added to the physical addresses to get them to be virtual addresses?
+Like have an offset of 0xC0000000. So if we are using physical address 0x10000, its virtual address
+would be 0xC0010000.
+Just direct map from the big usable memory entry that is around 3 GiB. To find that one just find the biggest
+usable entry while ignoring the last, since the last is always outside range.

@@ -107,8 +107,8 @@ kernel_main(multiboot_info_t* mbi, uint32_t magic)
     /* I think this is just wrong? */
     // kprintf("Kernel Size: %d bytes\n", &kernel_end - &kernel_start);
 
-    scheduler();
-    // shell_loop(mbi);
+    // scheduler();
+    shell_loop(mbi);
 
     for(;;);
 }

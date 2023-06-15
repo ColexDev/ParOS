@@ -32,8 +32,8 @@ map_page(uint32_t virt, uint32_t phys, uint8_t get_phys)
         phys = pmm_alloc_frame();
         kprintf("Getting phys address\n");
     } else {
-        pmm_set_frame(phys / 0x1000);
-        kprintf("Setting phys frame\n");
+        // pmm_set_frame(phys / 0x1000);
+        // kprintf("Setting phys frame\n");
     }
 
     kprintf("mapping virt 0x%x to phys 0x%x\n", virt, phys);
@@ -100,12 +100,8 @@ enable_paging(uint32_t* page_directory)
 uint32_t*
 create_page_directory()
 {
-    // uint32_t* page_directory = (uint32_t*)pmm_alloc_frame();
-    uint32_t* page_directory = (uint32_t*)0xFF000000;
+    uint32_t* page_directory = (uint32_t*)pmm_alloc_frame();
     kprintf("PAGE DIR ADDR PHYS: 0x%x\n", page_directory);
-    // map_page((uint32_t)page_directory, (uint32_t)page_directory, 0);
-    map_page(0xFF000000, 0, 1);
-    kprintf("After map\n");
 
     // memset(page_directory, 2, TABLES_PER_DIR); /* attribute set to: supervisor level, read/write, not present(010 in binary) */
     //
@@ -115,7 +111,7 @@ create_page_directory()
     // /* Set first page table */
     // page_directory[0] = (uint32_t)first_page_table | 3;
 
-    memcpy(page_directory, kernel_pdir_static, PAGE_SIZE);
+    // memcpy(page_directory, kernel_pdir_static, PAGE_SIZE);
 
     return page_directory;
 }
