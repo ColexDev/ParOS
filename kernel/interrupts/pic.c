@@ -1,4 +1,5 @@
-#include "pic.h"
+#include <stdint.h>
+
 #include "../io/port_io.h"
 
 #define PIC1_COMMAND_PORT 0x20
@@ -61,60 +62,4 @@ pic_configure(uint8_t offset_pic1, uint8_t offset_pic2)
     io_wait();
     outb(PIC2_DATA_PORT, 0);
     io_wait();
-}
-
-void
-pic_mask(int irq)
-{
-    if (irq > 8) {
-        irq -= 8;
-    }
-
-    uint8_t mask = inb(PIC1_DATA_PORT);
-    outb(PIC1_DATA_PORT, mask | (1 << irq));
-}
-
-void
-pic_unmask(int irq)
-{
-    if (irq > 8) {
-        irq -= 8;
-    }
-
-    uint8_t mask = inb(PIC1_DATA_PORT);
-    outb(PIC1_DATA_PORT, mask & ~(1 << irq));
-}
-
-void
-pic_disable(void)
-{
-    outb(PIC1_DATA_PORT, 0xFF);
-    io_wait();
-    outb(PIC2_DATA_PORT, 0xFF);
-    io_wait();
-}
-
-void
-pic_send_EOI(int irq)
-{
-    if (irq >= 8) {
-        outb(PIC2_COMMAND_PORT, PIC_CMD_EOI);
-    }
-    outb(PIC1_COMMAND_PORT, PIC_CMD_EOI);
-}
-
-uint16_t
-pic_read_IRQ_register(void)
-{
-    outb(PIC1_COMMAND_PORT, PIC_CMD_READ_IRR);
-    outb(PIC2_COMMAND_PORT, PIC_CMD_READ_IRR);
-    return inb(PIC2_COMMAND_PORT) | (inb(PIC2_COMMAND_PORT) << 8);
-}
-
-uint16_t
-pic_read_in_service_register(void)
-{
-    outb(PIC1_COMMAND_PORT, PIC_CMD_READ_ISR);
-    outb(PIC2_COMMAND_PORT, PIC_CMD_READ_ISR);
-    return inb(PIC2_COMMAND_PORT) | (inb(PIC2_COMMAND_PORT) << 8);
 }

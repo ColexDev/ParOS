@@ -3,13 +3,8 @@
 
 #include <stdint.h>
 
-void outb(uint16_t port, uint8_t data);
+void outb(uint16_t port, uint8_t val);
 uint8_t inb(uint16_t port);
-void outw(uint16_t port, uint16_t data);
-uint16_t inw(uint16_t port);
 void io_wait(void);
 
-uint8_t __attribute__((cdecl)) enable_interrupts();
-uint8_t __attribute__((cdecl)) disable_interrupts();
-
-#endif /* #ifndef PORT_IO_H */
+#endif

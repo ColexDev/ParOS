@@ -1,115 +1,106 @@
 #include <stdint.h>
+#include <stddef.h>
+#include <limine.h>
+#include <stdarg.h>
 
-#include "interrupts/pic.h"
-#include "drivers/tty.h"
-#include "stdlib/util.h"
-#include "gdt/gdt.h"
-#include "interrupts/idt.h"
-#include "interrupts/isr.h"
-#include "interrupts/irq.h"
-#include "timer/timer.h"
-#include "drivers/keyboard.h"
-#include "drivers/vga.h"
-#include "drivers/cmos.h"
-#include "multiboot.h"
-#include "mm/mmap.h"
-#include "mm/pmm.h"
-#include "mm/paging.h"
-#include "mm/kheap.h"
+#include "io/serial.h"
 #include "io/port_io.h"
-#include "drivers/disk.h"
-#include "fs/fs.h"
-#include "shell/shell.h"
+#include "io/printf.h"
+#include "interrupts/idt.h"
 
-void crash_me();
-void kernel_panic();
-void disable_blinking();
-extern uint64_t kernel_end;
-extern uint64_t kernel_start;
 
-void
-text_editor(char* file)
-{
-    uint8_t fd = open_file(file, FILE_APPEND_FLAG);
-    /* extra 1 for \0 */
-    uint32_t size = get_file_size(fd) + 1 + 5;
-    uint32_t old_size = size;
-    char c = 0;
-    uint8_t cursor_x, cursor_y;
+// GCC and Clang reserve the right to generate calls to the following
+// 4 functions even if they are not directly called.
+// Implement them as the C specification mandates.
+// DO NOT remove or rename these functions, or stuff will eventually break!
+// They CAN be moved to a different .c file.
+int kprintf(char* fmt, ...);
 
-    char* contents = kmalloc(sizeof(char) * size);
+void *memcpy(void *dest, const void *src, size_t n) {
+    uint8_t *pdest = (uint8_t *)dest;
+    const uint8_t *psrc = (const uint8_t *)src;
 
-    read_file(fd, contents, size);
-    clear_screen();
-    kprintf("%s", contents);
+    for (size_t i = 0; i < n; i++) {
+        pdest[i] = psrc[i];
+    }
 
-    for(;;) {
-        const uint16_t index = (get_cursor_y() - 1) * VGA_WIDTH + get_cursor_x();
-        c = 0;
-        while (!c) {
-            c = getchar();
-        }
-        switch (c) {
-            case 'j':
-                move_cursor_down(1);
-                break;
-            case 'k':
-                move_cursor_up(1);
-                break;
-            case 'h':
-                move_cursor_left(1);
-                break;
-            case 'l':
-                move_cursor_right(1);
-                break;
-            default:
-                cursor_x = get_cursor_x();
-                cursor_y = get_cursor_y();
-
-                for (int i = size - 1; i >= index; i--) {
-                    contents[i + 1] = contents[i];
-                }
-
-                contents[index] = c;
-                size++;
-                break;
-        }
-        if (size != old_size) {
-            clear_screen();
-            kprintf("%s", contents);
-            kprintf("%d\n", index);
-            move_cursor(cursor_x, cursor_y);
-        }
-
-        old_size = size;
-    };
+    return dest;
 }
 
-void
-kernel_main(multiboot_info_t* mbi, uint32_t magic) 
+void *memset(void *s, int c, size_t n) {
+    uint8_t *p = (uint8_t *)s;
+
+    for (size_t i = 0; i < n; i++) {
+        p[i] = (uint8_t)c;
+    }
+
+    return s;
+}
+
+void *memmove(void *dest, const void *src, size_t n) {
+    uint8_t *pdest = (uint8_t *)dest;
+    const uint8_t *psrc = (const uint8_t *)src;
+
+    if (src > dest) {
+        for (size_t i = 0; i < n; i++) {
+            pdest[i] = psrc[i];
+        }
+    } else if (src < dest) {
+        for (size_t i = n; i > 0; i--) {
+            pdest[i-1] = psrc[i-1];
+        }
+    }
+
+    return dest;
+}
+
+int memcmp(const void *s1, const void *s2, size_t n) {
+    const uint8_t *p1 = (const uint8_t *)s1;
+    const uint8_t *p2 = (const uint8_t *)s2;
+
+    for (size_t i = 0; i < n; i++) {
+        if (p1[i] != p2[i]) {
+            return p1[i] < p2[i] ? -1 : 1;
+        }
+    }
+
+    return 0;
+}
+
+// Halt and catch fire function.
+static void hcf(void) {
+    asm ("cli");
+    for (;;) {
+        asm ("hlt");
+    }
+}
+
+size_t
+strlen(const char* str) 
 {
-    if (magic != MULTIBOOT_BOOTLOADER_MAGIC)
-        kernel_panic();
+    size_t len = 0;
+    while (str[len])
+        len++;
+    return len;
+}
 
-    terminal_initialize();
-    clear_screen();
-    gdt_install();
-    idt_install();
-    isr_install();
-    irq_install();
-    timer_install();
-    keyboard_install();
-    // disable_blinking();
-    pmm_init();
-    print_header();
-    init_paging();
+struct regs*
+div_by_zero_isr(struct regs* r)
+{
+    kprintf("DIV BY 0\n");
 
-    // text_editor("test.txt");
+    return r;
+}
 
-    /* I think this is just wrong? */
-    // kprintf("Kernel Size: %d bytes\n", &kernel_end - &kernel_start);
+void _start(void) {
 
-    shell_loop(mbi);
+    idt_init();
+    isr_install(0, div_by_zero_isr);
+    // asm("div %ah"); /* Division by 0 */
+    asm("int $0x0");
+    // asm("int $0x20");
+    kprintf("HELLO\n");
 
-    for(;;);
+    // We're done, just hang...
+    hcf();
 }

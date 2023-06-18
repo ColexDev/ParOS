@@ -3,39 +3,79 @@
 
 #include <stdint.h>
 
-struct __attribute__((packed)) idt_entry
+struct idt_entry
 {
     uint16_t base_low;
-    uint16_t segment_selector;
-    uint8_t  reserved;
-    uint8_t  flags;
-    uint16_t base_high;
+    uint16_t selector;
+
+    uint8_t zero;
+    uint8_t flags;
+
+    uint16_t base_mid;
+    uint32_t base_high;
+    uint32_t pad;
+} __attribute__((packed));
+
+struct idt_pointer
+{
+	uint16_t  limit;
+	uintptr_t base;
+} __attribute__((packed));
+
+struct regs
+{
+	/* Pushed by common stub */
+	uintptr_t r15, r14, r13, r12;
+	uintptr_t r11, r10, r9, r8;
+	uintptr_t rbp, rdi, rsi, rdx, rcx, rbx, rax;
+
+	/* Pushed by irq_helper.S */
+	uintptr_t int_no, err_code;
+
+	/* Pushed by interrupt */
+	uintptr_t rip, cs, rflags, rsp, ss;
 };
 
-struct __attribute__((packed)) idt_entry_ptr
-{
-    uint16_t limit;
-    struct idt_entry* ptr;
-};
+typedef struct regs * (*interrupt_handler_t)(struct regs *);
+typedef struct regs * (*isr_handler_t)(struct regs *);
 
-typedef enum
-{
-    IDT_FLAG_GATE_TASK              = 0x5,
-    IDT_FLAG_GATE_16BIT_INT         = 0x6,
-    IDT_FLAG_GATE_16BIT_TRAP        = 0x7,
-    IDT_FLAG_GATE_32BIT_INT         = 0xE,
-    IDT_FLAG_GATE_32BIT_TRAP        = 0xF,
+void idt_init(void);
+void isr_install(uint8_t index, isr_handler_t isr);
 
-    IDT_FLAG_RING0                  = (0 << 5),
-    IDT_FLAG_RING3                  = (3 << 5),
+extern struct regs *_isr0(struct regs*);
+extern struct regs *_isr1(struct regs*);
+extern struct regs *_isr2(struct regs*);
+extern struct regs *_isr3(struct regs*);
+extern struct regs *_isr4(struct regs*);
+extern struct regs *_isr5(struct regs*);
+extern struct regs *_isr6(struct regs*);
+extern struct regs *_isr7(struct regs*);
+extern struct regs *_isr8(struct regs*);
+extern struct regs *_isr9(struct regs*);
+extern struct regs *_isr10(struct regs*);
+extern struct regs *_isr11(struct regs*);
+extern struct regs *_isr12(struct regs*);
+extern struct regs *_isr13(struct regs*);
+extern struct regs *_isr14(struct regs*);
+extern struct regs *_isr15(struct regs*);
+extern struct regs *_isr16(struct regs*);
+extern struct regs *_isr17(struct regs*);
+extern struct regs *_isr18(struct regs*);
+extern struct regs *_isr19(struct regs*);
+extern struct regs *_isr20(struct regs*);
+extern struct regs *_isr21(struct regs*);
+extern struct regs *_isr22(struct regs*);
+extern struct regs *_isr23(struct regs*);
+extern struct regs *_isr24(struct regs*);
+extern struct regs *_isr25(struct regs*);
+extern struct regs *_isr26(struct regs*);
+extern struct regs *_isr27(struct regs*);
+extern struct regs *_isr28(struct regs*);
+extern struct regs *_isr29(struct regs*);
+extern struct regs *_isr30(struct regs*);
+extern struct regs *_isr31(struct regs*);
+extern struct regs *_isr32(struct regs*); /* Timer interrupt */
+extern struct regs *_isr33(struct regs*); /* PS2 Keyboard interrupt */
+extern struct regs *_isr128(struct regs*); /* Syscall */
 
-    IDT_FLAG_PRESENT                = 0x80,
-} IDT_FLAGS;
-
-void idt_install(void);
-void idt_disable_gate(int interrupt);
-void idt_enable_gate(int interrupt);
-void idt_set_gate(int interrupt, void* base, uint16_t segment_descriptor, uint8_t flags);
-void __attribute__((cdecl)) idt_load(struct idt_entry_ptr* idt_ptr);
-
-#endif /* #ifndef IDT_H */
+#endif
