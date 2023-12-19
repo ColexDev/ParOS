@@ -12,7 +12,9 @@ void
 parse_multiboot_mmap(multiboot_info_t* mbi)
 {
     multiboot_memory_map_t* mmap = (multiboot_memory_map_t*)mbi->mmap_addr;
+    kprintf("memory map addr start: 0x%x\n", mbi->mmap_addr);
     uint32_t mmap_end = mbi->mmap_addr + mbi->mmap_length;
+    kprintf("memory map addr end: 0x%x\n", mmap_end);
 
     while ((uint32_t)mmap < mmap_end) {
         uint64_t base_addr = ((uint64_t)mmap->addr_high << 32) | mmap->addr_low;

@@ -47,7 +47,6 @@ static uint8_t bitmap[HEAP_START_SIZE / BLOCK_SIZE / 8] = {0};
 void*
 kmalloc(uint32_t size)
 {
-    // kprintf("IN MALLOC FOR SIZE %d\n", size);
     uint32_t num_blocks   = size / BLOCK_SIZE;
     uint32_t total_blocks = HEAP_START_SIZE / BLOCK_SIZE;
     uint32_t free_frames  = 0;
@@ -93,13 +92,13 @@ kmalloc(uint32_t size)
     /* Set header */
     memcpy(start_addr, &header, sizeof(struct block_header));
 
+    // kprintf("IN MALLOC FOR SIZE %d at ADDR 0x%x\n", num_blocks * 8, (uint32_t)start_addr + sizeof(struct block_header));
     return (void*)((uint32_t)start_addr + sizeof(struct block_header));
 }
 
 void
 kfree(void* ptr)
 {
-    // kprintf("Before free bitmap: %d\n", bitmap[0]);
     struct block_header* header;
     void* full_ptr = ptr - sizeof(struct block_header);
     uint32_t start_block;
@@ -115,6 +114,8 @@ kfree(void* ptr)
     for (uint32_t block = 0; block < header->size + 1; block++) {
         clear_bit(bitmap, start_block + block);
     }
+
+    // kprintf("IN FREE FOR SIZE %d at ADDR 0x%x\n", header->size * 8, (uint32_t)ptr);
 
     // kprintf("addr of ptr->0x%x\n", ptr);
     // kprintf("Start block->%d\n", start_block);

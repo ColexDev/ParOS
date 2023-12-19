@@ -25,8 +25,6 @@
 void crash_me();
 void kernel_panic();
 void disable_blinking();
-extern uint64_t kernel_end;
-extern uint64_t kernel_start;
 
 void
 text_editor(char* file)
@@ -100,9 +98,25 @@ kernel_main(multiboot_info_t* mbi, uint32_t magic)
     irq_install();
     timer_install();
     keyboard_install();
-    pmm_init();
-    print_header();
+    pmm_init(mbi);
     init_paging();
+
+    // kprintf("VGA BIT AFTER INIT: %d\n", pmm_get_frame(0xB8));
+    // for (uint32_t i = 0; i < 0x100; i++)
+    //     if (pmm_alloc_frame() == 0xB8000)
+    //         kprintf("AHHHHHHHH BADDDDDDDDDDDDDDDDDDDDD\n");
+    // pmm_set_frame(0xB8);
+    // kprintf("BIT BEFORE BEFORE of addr 0x%x: %d\n", (0xB8 * 0x1000), pmm_get_frame(0xB8));
+    // pmm_clear_frame(0xB8);
+    // kprintf("BIT AFTER CLEAR of addr 0x%x: %d\n", (0xB8 * 0x1000), pmm_get_frame(0xB8));
+    // for (uint32_t i = 0; i < 0xB9; i++) {
+    //     uint32_t frame = pmm_alloc_frame();
+    //     if (frame == 0xB8000) {
+    //         kprintf("BIT BEFORE of addr 0x%x: %d\n", frame, pmm_get_frame(frame / 0x1000));
+    //     }
+    //     kprintf("BIT AFTER of addr 0x%x: %d\n", frame, pmm_get_frame(frame / 0x1000));
+    //     // kprintf("Allocing pmm frame 0x%x\n", frame);
+    // }
 
     /* I think this is just wrong? */
     // kprintf("Kernel Size: %d bytes\n", &kernel_end - &kernel_start);

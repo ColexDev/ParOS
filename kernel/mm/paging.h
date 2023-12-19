@@ -27,8 +27,8 @@
 #define PAGE_STRUCTURE_ADDRESS_MASK ~0xFFF
 
 void init_paging();
-uint32_t get_page(uint32_t virt);
-void create_page_table(uint32_t virt, uint32_t* page_directory);
+uint32_t get_page(uint32_t* page_directory, uint32_t virt);
+void create_page_table(uint32_t* page_directory, uint32_t virt);
 void enable_paging(uint32_t* page_directory);
 uint32_t* create_page_directory();
 void set_page_directory_ptr(uint32_t* page_directory);

@@ -77,10 +77,12 @@ shell_execute(char** args, multiboot_info_t* mbi)
         clear_screen();
     } else if (!kstrcmp(args[0], "time")) {
         char* time;
+        kprintf("Time: 0x%x\n", &time);
         get_time_string(time);
         kprintf("%s\n", time);
     } else if (!kstrcmp(args[0], "date")) {
         char* date;
+        kprintf("Date: 0x%x\n", &date);
         get_date_string(date);
         kprintf("%s\n", date);
     } else if (!kstrcmp(args[0], "memmap")) {
@@ -108,13 +110,17 @@ shell_loop(multiboot_info_t* mbi)
     char** args;
     uint32_t addr;
 
+    /* FIXME: Somehow 8+ characters in "line" causes a memory leak, it seems fine until you enter
+     * another command, in which it does way more allocs than normal and creates a leak? */
     for (;;) {
         kprintf("> ");
         line = kgets();
         args = shell_parse_line(line);
         shell_execute(args, mbi);
 
-        memset(line, 0, sizeof(char*));
+        memset(line, 0, sizeof(char) * 128);
+        memset(args, 0, sizeof(char*) * 64);
+        // kprintf("FREEING LINE\n");
         kfree(line);
         kfree(args);
     }

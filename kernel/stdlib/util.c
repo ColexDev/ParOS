@@ -78,9 +78,10 @@ char*
 kgets(void)
 {
     char c = 0;
-    char* buf = kmalloc(sizeof(char*) * 100);
+    char* buf = kmalloc(sizeof(char) * 128);
     uint8_t prompt_start = get_cursor_x();
-    memset(buf, 0, 400);
+
+    memset(buf, 0, sizeof(char) * 128);
 
     for (;;) { 
         c = 0;

@@ -220,7 +220,7 @@ read_file(uint32_t id, uint8_t* buf, uint32_t count)
      * necessarily an entire sector/part of sector not
      * used by this file */
     // memcpy(buf, temp_buf, count);
-    // kfree(temp_buf);
+    kfree(temp_buf);
 }
 
 uint32_t

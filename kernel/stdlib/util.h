@@ -4,6 +4,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#define ALIGN_DOWN(val) (((val) / (0x1000)) * (0x1000))
+
 char* itoa(uint64_t value, char *str, size_t base);
 void* memset(void *dest, int val, size_t len);
 void* memcpy(void *dest, const void *src, size_t len);
