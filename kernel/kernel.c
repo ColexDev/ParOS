@@ -95,10 +95,11 @@ div_by_zero_isr(struct regs* r)
 void
 _start(void) {
     idt_init();
-    // isr_install(0, div_by_zero_isr);
-    // asm("div %ah"); /* Division by 0 */
-    // asm("int $0x18");
-    kprintf("HELLO\n");
+    kprintf("BEFORE INTERRUPT\n");
+    // asm("int $0x21");
+    asm("int $0x80");
+    kprintf("AFTER INTERRUPT\n");
+    asm volatile ("movl %0, %%eax" : : "r"(0xDEADBEEF));
 
     // We're done, just hang...
     hcf();

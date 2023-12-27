@@ -3,6 +3,7 @@
 #include "idt.h"
 
 static struct idtr idt_reg;
+__attribute__((aligned(0x10))) 
 static struct idt_entry idt[256];
 
 void
@@ -32,9 +33,12 @@ idt_reload(void)
     asm volatile ("lidt %0" :: "m"(idt_reg));
 }
 
+extern void isr128(void);
+
 void
 idt_init(void)
 {
     idt_reload();
+    idt_register_entry(128, isr128, INT_GATE);
     asm volatile ("sti"); /* enable interrupts */
 }
