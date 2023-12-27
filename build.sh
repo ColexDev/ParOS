@@ -20,14 +20,14 @@ do
 done
 
 # Build all Assembly files
-for i in $(find kernel/ -name '*.S')
+for i in $(find kernel/ -name '*.asm')
 do
     filename_no_dir=$(basename -- "$i")
     filename_no_extension="${filename_no_dir%.*}"
     object_file=" temp/${filename_no_extension}s.o"
     OBJECT_FILES+=$object_file
     # nasm -f elf32 "$i" -o $object_file -g 
-    as "$i" -o $object_file
+    nasm "$i" -o $object_file
 done
 
 # Link all together

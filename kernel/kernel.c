@@ -6,7 +6,7 @@
 #include "io/serial.h"
 #include "io/port_io.h"
 #include "io/printf.h"
-// #include "interrupts/idt.h"
+#include "cpu/interrupts/idt.h"
 
 
 // GCC and Clang reserve the right to generate calls to the following
@@ -92,12 +92,12 @@ div_by_zero_isr(struct regs* r)
     return r;
 }
 
-void _start(void) {
-    // idt_init();
+void
+_start(void) {
+    idt_init();
     // isr_install(0, div_by_zero_isr);
     // asm("div %ah"); /* Division by 0 */
-    // asm("int $0x0");
-    // asm("int $0x20");
+    // asm("int $0x18");
     kprintf("HELLO\n");
 
     // We're done, just hang...
