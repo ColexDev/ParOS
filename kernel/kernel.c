@@ -141,10 +141,9 @@ _start(void) {
     idt_init();
     kprintf("BEFORE INTERRUPT\n");
     print_registers();
-    // dump_idt();
     asm ("int $0x00");
     kprintf("AFTER INTERRUPT\n");
-    asm volatile ("movl %0, %%eax" : : "r"(0xDEADBEEF));
+    // asm volatile ("movl %0, %%eax" : : "r"(0xDEADBEEF));
 
     // We're done, just hang...
     hcf();
