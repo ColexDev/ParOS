@@ -1,6 +1,6 @@
 extern interrupt_handler
 
-global isr128
+global isr0
 
 bits 64
 
@@ -47,7 +47,7 @@ common_interrupt_handler:
 
     iretq
 
-isr128:
+isr0:
     push 0
-    push 128
+    push 0
     jmp common_interrupt_handler

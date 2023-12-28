@@ -26,5 +26,6 @@ struct idtr
 
 void idt_init(void);
 void idt_register_entry(uint8_t vector, void* handler, uint8_t flags);
+void dump_idt();
 
 #endif /* IDT_H */
