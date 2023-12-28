@@ -141,13 +141,8 @@ _start(void) {
     idt_init();
     kprintf("BEFORE INTERRUPT\n");
     print_registers();
-    dump_idt();
-    /* Div by 0 */
-    asm volatile (
-        "mov $0, %rax\n"
-        "mov $0, %rdx\n"
-        "div %rdx"
-    );
+    // dump_idt();
+    asm ("int $0x00");
     kprintf("AFTER INTERRUPT\n");
     asm volatile ("movl %0, %%eax" : : "r"(0xDEADBEEF));
 
