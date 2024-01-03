@@ -13,6 +13,7 @@
 #include <debug/debug.h>
 #include <mem/pmm/pmm.h>
 #include <mem/memmap/memmap.h>
+#include <bl/bl.h>
 
 // Halt and catch fire function. (from limine)
 static void
@@ -23,17 +24,6 @@ hcf(void)
         asm ("hlt");
     }
 }
-
-static volatile struct limine_hhdm_request hhdm_request = {
-    .id = LIMINE_HHDM_REQUEST,
-    .revision = 0
-};
-
-static volatile struct limine_kernel_address_request kernel_addr = {
-    .id = LIMINE_KERNEL_ADDRESS_REQUEST,
-    .revision = 0
-};
-
 
 void
 _start(void)
@@ -50,10 +40,10 @@ _start(void)
     // asm ("int $0x2");
     // kprintf("AFTER INTERRUPT\n");
     //
-    uint64_t offset = hhdm_request.response->offset;
+    uint64_t offset = bl_get_hhdm_offset();
     kprintf("HHDM offset: 0x%llx\n", offset);
     kprintf("kernel virt: 0x%llx\t Entry phys: 0x%llx\n", 
-            kernel_addr.response->virtual_base, kernel_addr.response->physical_base);
+            bl_get_kernel_virt_addr(), bl_get_kernel_phys_addr());
     kprintf("Top of stack PHYS: 0x%llx\n", top_of_stack - offset);
 
     // We're done, just hang...
