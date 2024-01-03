@@ -29,3 +29,18 @@ memmap_print(void)
         kprintf("[0x%lx->0x%lx] %luB %s\n", memmap->entries[i]->base, memmap->entries[i]->base + memmap->entries[i]->length, memmap->entries[i]->length, memmap_types[memmap->entries[i]->type]);
     }
 }
+
+uint64_t
+memmap_get_highest_usable_address(void)
+{
+    struct limine_memmap_response* memmap = memmap_request.response;
+    uint64_t highest = 0;
+
+    for (uint64_t i = 0; i < memmap->entry_count; i++) {
+        if (memmap->entries[i]->type == LIMINE_MEMMAP_USABLE) {
+            highest = memmap->entries[i]->base + memmap->entries[i]->length;
+        }
+    }
+
+    return highest;
+}

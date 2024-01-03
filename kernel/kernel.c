@@ -11,6 +11,8 @@
 #include <cpu/interrupts/interrupts.h>
 #include <cpu/gdt/gdt.h>
 #include <debug/debug.h>
+#include <mem/pmm/pmm.h>
+#include <mem/memmap/memmap.h>
 
 // Halt and catch fire function. (from limine)
 static void
@@ -31,6 +33,7 @@ static volatile struct limine_kernel_address_request kernel_addr = {
     .id = LIMINE_KERNEL_ADDRESS_REQUEST,
     .revision = 0
 };
+
 
 void
 _start(void)
@@ -58,7 +61,8 @@ _start(void)
     kprintf("test_var2 virt: 0x%llx\t without offset: 0x%llx\n",
             &test_var2, (uint64_t)(&test_var2) - offset);
     kprintf("Top of stack PHYS: 0x%llx\n", top_of_stack - offset);
-    // memmap_print();
+    memmap_print();
+    pmm_init();
 
     // We're done, just hang...
     hcf();
