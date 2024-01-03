@@ -1,3 +1,4 @@
+#include "mem/memmap/memmap.h"
 #include <stdint.h>
 #include <stddef.h>
 #include <limine.h>
@@ -43,4 +44,25 @@ memmap_get_highest_usable_address(void)
     }
 
     return highest;
+}
+
+struct memmap_entry
+memmap_get_entry(uint64_t entry)
+{
+    struct limine_memmap_response* memmap = memmap_request.response;
+
+    struct memmap_entry ret = {
+        .base   = memmap->entries[entry]->base,
+        .length = memmap->entries[entry]->length,
+        .type   = memmap->entries[entry]->type
+    };
+    return ret;
+}
+
+uint64_t
+memmap_get_num_entries(void)
+{
+    struct limine_memmap_response* memmap = memmap_request.response;
+
+    return memmap->entry_count;
 }

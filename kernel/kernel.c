@@ -42,27 +42,19 @@ _start(void)
     asm volatile ("movq %%rsp, %0" : "=r" (top_of_stack));
     gdt_init();
     idt_init();
-    kprintf("BEFORE INTERRUPT\n");
-    print_registers();
+    pmm_init();
+    memmap_print();
+    // kprintf("BEFORE INTERRUPT\n");
+    // print_registers();
 
-    /* Adding all this so test_var doesn't get optimized away 
-     * testing to see if stack is alright with test_var2 */
-    uint64_t test_var = 5;
-    uint64_t test_var2 = 12;
-    test_var++;
-
-    asm ("int $0x2");
-    kprintf("AFTER INTERRUPT\n");
-
+    // asm ("int $0x2");
+    // kprintf("AFTER INTERRUPT\n");
+    //
     uint64_t offset = hhdm_request.response->offset;
     kprintf("HHDM offset: 0x%llx\n", offset);
     kprintf("kernel virt: 0x%llx\t Entry phys: 0x%llx\n", 
             kernel_addr.response->virtual_base, kernel_addr.response->physical_base);
-    kprintf("test_var2 virt: 0x%llx\t without offset: 0x%llx\n",
-            &test_var2, (uint64_t)(&test_var2) - offset);
     kprintf("Top of stack PHYS: 0x%llx\n", top_of_stack - offset);
-    memmap_print();
-    pmm_init();
 
     // We're done, just hang...
     hcf();
