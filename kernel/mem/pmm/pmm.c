@@ -173,7 +173,7 @@ pmm_init(void)
                 pmm_clear_frame(j);
             }
 
-            usable_pages += aligned_length / PAGE_SIZE;
+            usable_pages      += aligned_length / PAGE_SIZE;
             total_page_frames += aligned_length / PAGE_SIZE;
             break;
         case MEMMAP_KERNEL_AND_MODULES:     /* Fallthrough */
@@ -183,8 +183,8 @@ pmm_init(void)
         case MEMMAP_BAD_MEMORY:             /* Fallthrough */
         case MEMMAP_BOOTLOADER_RECLAIMABLE: /* Fallthrough */
         case MEMMAP_FRAMEBUFFER:
+            reserved_pages    += aligned_length / PAGE_SIZE;
             total_page_frames += aligned_length / PAGE_SIZE;
-            reserved_pages += aligned_length / PAGE_SIZE;
             break;
         }
     }
