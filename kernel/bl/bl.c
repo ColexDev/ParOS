@@ -28,3 +28,4 @@ bl_get_kernel_phys_addr(void)
 {
     return kernel_addr.response->physical_base;
 }
+

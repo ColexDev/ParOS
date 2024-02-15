@@ -12,6 +12,7 @@
 #include <cpu/gdt/gdt.h>
 #include <debug/debug.h>
 #include <mem/pmm/pmm.h>
+#include <mem/vmm/vmm.h>
 #include <mem/memmap/memmap.h>
 #include <bl/bl.h>
 
@@ -24,6 +25,7 @@ hcf(void)
         asm ("hlt");
     }
 }
+
 
 void
 _start(void)
@@ -40,11 +42,17 @@ _start(void)
     // asm ("int $0x2");
     // kprintf("AFTER INTERRUPT\n");
     //
+    vmm_init();
+    kprintf("VMM INIT IS DONE\n");
     uint64_t offset = bl_get_hhdm_offset();
     kprintf("HHDM offset: 0x%llx\n", offset);
     kprintf("kernel virt: 0x%llx\t Entry phys: 0x%llx\n", 
             bl_get_kernel_virt_addr(), bl_get_kernel_phys_addr());
     kprintf("Top of stack PHYS: 0x%llx\n", top_of_stack - offset);
+    // uint64_t* test = (uint64_t*)(0x82000 + bl_get_hhdm_offset());
+    // uint64_t* test = (uint64_t*)(0x82000);
+    // *test = 5;
+    // kprintf("OKAY: %d\n", *test);
 
     // We're done, just hang...
     hcf();

@@ -114,7 +114,6 @@ pmm_free(void* start_addr, uint64_t num_frames)
         used_pages--;
         pmm_clear_frame(i);
     }
-
 }
 
 /* NOTE:
