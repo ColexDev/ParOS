@@ -11,6 +11,11 @@ static volatile struct limine_kernel_address_request kernel_addr = {
     .revision = 0
 };
 
+static volatile struct limine_rsdp_request rsdp_request = {
+    .id = LIMINE_RSDP_REQUEST,
+    .revision = 0
+};
+
 uint64_t
 bl_get_hhdm_offset(void)
 {
@@ -29,3 +34,8 @@ bl_get_kernel_phys_addr(void)
     return kernel_addr.response->physical_base;
 }
 
+uint64_t
+bl_get_rsdp_addr(void)
+{
+    return (uint64_t)rsdp_request.response->address;
+}

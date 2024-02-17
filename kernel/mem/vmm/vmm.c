@@ -26,6 +26,7 @@ page_fault_handler(struct interrupt_frame* frame)
     uint64_t err_code = frame->error_code;
     kprintf("===OH GOD NO, PAGE FAULT===\n");
     asm volatile ("mov %%cr2, %0" : "=r" (faulting_address));
+    kprintf("Error code: %d\n", err_code);
     /* Protection error */
     if (err_code & 1) {
         kprintf("Protection issue\n");
@@ -70,8 +71,6 @@ vmm_init()
     struct memmap_entry entry;
     for(uint64_t i = 0; i < memmap_get_num_entries(); i++){
         entry = memmap_get_entry(i);
-        // if(entry.type != MEMMAP_KERNEL_AND_MODULES ||
-        //    entry.type != MEMMAP_BOOTLOADER_RECLAIMABLE) continue;
 
         if (entry.type == MEMMAP_KERNEL_AND_MODULES) {
             kprintf("===MAPPING KERNEL phys 0x%llx at virt 0x%llx===\n", 
@@ -80,22 +79,15 @@ vmm_init()
                 vmm_map_page(kernel_pml4, i + bl_get_kernel_phys_addr(), i + bl_get_kernel_virt_addr());
             }
         }
-        // if (entry.type == MEMMAP_BOOTLOADER_RECLAIMABLE) {
-        //     kprintf("===MAPPING BOOTLOADER STUFF at 0x%llx to 0x%llx, length: 0x%llx===\n", entry.base, entry.base + bl_get_hhdm_offset(),entry.length);
-        //     for(uint64_t i = 0; i <= ALIGN_UP(entry.length, PAGE_SIZE); i+=PAGE_SIZE){
-        //         vmm_map_page(kernel_pml4, i + entry.base, i + entry.base + bl_get_hhdm_offset());
-        //     // kprintf("===ACTUAL MAPPING BOOTLOADER STUFF at 0x%llx, length: 0x%llx===\n", i + entry.base, i+ entry.base + bl_get_hhdm_offset());
-        //     }
-        // }
     }
 
     // map first 4 GiB
     kprintf("===MAPPING FIRST 4GB===\n");
     for(uint64_t i = 0x1000; i <= 0xffffffff; i += PAGE_SIZE){
-        vmm_map_page(kernel_pml4, i, i);
+        // vmm_map_page(kernel_pml4, i, i);
         vmm_map_page(kernel_pml4, i, i + bl_get_hhdm_offset());
     }
-    kprintf("==========LOADING NEW PML4=========\n");
+
     load_pml4(kernel_pml4);
 }
 
@@ -106,6 +98,7 @@ vmm_init()
  * only map it at the HHDM offset which I will probably do, I need to go in and
  * add the HHDM in the else statements as well, not sure why I did it when creating them
  * and not in the else */
+#define ALIGN_DOWN(value, alignment) ((value) & ~((alignment) - 1))
 uint64_t
 vmm_map_page(struct page_table* pml4, uint64_t phys, uint64_t virt)
 {
@@ -115,8 +108,13 @@ vmm_map_page(struct page_table* pml4, uint64_t phys, uint64_t virt)
     struct page_table* pd;
     struct page_table* pt;
 
-    // kprintf("===MAPPING 0x%llx to 0x%llx\n===", phys, virt);
-    // kprintf("PML4 entry: 0x%llx\n", pml4->entries[PML4_IDX(virt)]);
+    phys = ALIGN_DOWN(phys, PAGE_SIZE);
+    virt = ALIGN_DOWN(virt, PAGE_SIZE);
+
+    if (phys == 0xf5990) {
+        kprintf("===MAPPING 0x%llx to 0x%llx\n===", phys, virt);
+        kprintf("PML4 entry: 0x%llx\n", pml4->entries[PML4_IDX(virt)]);
+    }
     if (!(pml4->entries[PML4_IDX(virt)] & PTE_PRESENT)) {
         pdp = pmm_alloc(1);
         // kprintf("pdp phys: 0x%llx\n", pdp);
@@ -162,15 +160,15 @@ vmm_map_page(struct page_table* pml4, uint64_t phys, uint64_t virt)
     } else {
         // kprintf("The above already EXISTS\n");
     }
-    if (phys <= 0x85000) {
-        kprintf("===For Virt(0x%llx) -> Phys(0x%llx)===\n", virt, phys);
-        kprintf("PML4[%lld]->PDP[%lld]->PD[%lld]->PT[%lld] = 0x%llx\n",
-                PML4_IDX(virt), PDP_IDX(virt), PD_IDX(virt), PT_IDX(virt), pt->entries[PT_IDX(virt)]);
-        kprintf("PML4[%lld] = 0x%llx\n", PML4_IDX(virt), pml4->entries[PML4_IDX(virt)]);
-        kprintf("PDP[%lld] = 0x%llx\n", PDP_IDX(virt), pdp->entries[PDP_IDX(virt)]);
-        kprintf("PD[%lld] = 0x%llx\n", PD_IDX(virt), pd->entries[PD_IDX(virt)]);
-        kprintf("PT[%lld] = 0x%llx\n", PT_IDX(virt), pt->entries[PT_IDX(virt)]);
-    }
+    // if (phys <= 0xf6000) {
+    //     kprintf("===For Virt(0x%llx) -> Phys(0x%llx)===\n", virt, phys);
+    //     kprintf("PML4[%lld]->PDP[%lld]->PD[%lld]->PT[%lld] = 0x%llx\n",
+    //             PML4_IDX(virt), PDP_IDX(virt), PD_IDX(virt), PT_IDX(virt), pt->entries[PT_IDX(virt)]);
+    //     kprintf("PML4[%lld] = 0x%llx\n", PML4_IDX(virt), pml4->entries[PML4_IDX(virt)]);
+    //     kprintf("PDP[%lld] = 0x%llx\n", PDP_IDX(virt), pdp->entries[PDP_IDX(virt)]);
+    //     kprintf("PD[%lld] = 0x%llx\n", PD_IDX(virt), pd->entries[PD_IDX(virt)]);
+    //     kprintf("PT[%lld] = 0x%llx\n", PT_IDX(virt), pt->entries[PT_IDX(virt)]);
+    // }
     // kprintf("page phys: 0x%llx\n", curr_entry);
     // kprintf("PT[%lld] entry AFTER: 0x%llx\n", PT_IDX(virt), pt->entries[PT_IDX(virt)]);
 

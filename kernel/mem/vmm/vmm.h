@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
+extern struct page_table* kernel_pml4;
+
 #define PML4_IDX(virt) (((virt) >> 39) & 0x1ff)
 #define PDP_IDX(virt)  (((virt) >> 30) & 0x1ff)
 #define PD_IDX(virt)   (((virt) >> 21) & 0x1ff)
