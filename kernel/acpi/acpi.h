@@ -37,13 +37,13 @@ struct acpi_sdt_header
     uint32_t OEMRevision;
     uint32_t creator_ID;
     uint32_t creator_revision;
-};
+} __attribute__ ((packed));
 
 struct acpi_sdt
 {
     struct acpi_sdt_header header;   
-    uint32_t* entries;
-};
+    uint32_t entries[];
+} __attribute__ ((packed));
 
 void parse_acpi_tables(void);
 #endif /* ACPI_H */

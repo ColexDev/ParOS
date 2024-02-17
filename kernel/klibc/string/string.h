@@ -12,5 +12,6 @@ size_t strlen(const char* str);
 int strncmp(const char* s1, const char* s2, size_t n);
 
 #define ALIGN_UP(value, alignment) (((value) + ((alignment) - 1)) & ~((alignment) - 1))
+#define ALIGN_DOWN(value, alignment) ((value) & ~((alignment) - 1))
 
 #endif /* STRING_H */

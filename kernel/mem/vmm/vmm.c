@@ -60,6 +60,45 @@ page_fault_handler(struct interrupt_frame* frame)
     print_stack_trace();
 }
 
+uint8_t
+dump_pte(uint64_t virt)
+{
+    struct page_table* pml4 = kernel_pml4;
+    struct page_table* pdp;
+    struct page_table* pd;
+    struct page_table* pt;
+
+    if (!(pml4->entries[PML4_IDX(virt)] & PTE_PRESENT)) {
+        kprintf("DNE\n");
+        return 1;
+    } else {
+        pdp = (struct page_table*)(PTE_GET_ADDR(pml4->entries[PML4_IDX(virt)]) + bl_get_hhdm_offset());
+    }
+
+    if (!(pdp->entries[PDP_IDX(virt)] & PTE_PRESENT)) {
+        kprintf("DNE\n");
+        return 2;
+    } else {
+        pd = (struct page_table*)(PTE_GET_ADDR(pdp->entries[PDP_IDX(virt)]) + bl_get_hhdm_offset());
+    }
+
+    if (!(pd->entries[PD_IDX(virt)] & PTE_PRESENT)) {
+        kprintf("DNE\n");
+        return 3;
+    } else {
+        pt = (struct page_table*)(PTE_GET_ADDR(pd->entries[PD_IDX(virt)]) + bl_get_hhdm_offset());
+    }
+
+    if (!(pt->entries[PT_IDX(virt)] & PTE_PRESENT)) {
+        kprintf("DNE\n");
+        return 4;
+    } else {
+        kprintf("virt (0x%llx) -> entry (0x%llx)\n", virt, pt->entries[PT_IDX(virt)]);
+    }
+
+    return 0;
+}
+
 void
 vmm_init()
 {
@@ -98,7 +137,6 @@ vmm_init()
  * only map it at the HHDM offset which I will probably do, I need to go in and
  * add the HHDM in the else statements as well, not sure why I did it when creating them
  * and not in the else */
-#define ALIGN_DOWN(value, alignment) ((value) & ~((alignment) - 1))
 uint64_t
 vmm_map_page(struct page_table* pml4, uint64_t phys, uint64_t virt)
 {
@@ -108,35 +146,44 @@ vmm_map_page(struct page_table* pml4, uint64_t phys, uint64_t virt)
     struct page_table* pd;
     struct page_table* pt;
 
-    phys = ALIGN_DOWN(phys, PAGE_SIZE);
-    virt = ALIGN_DOWN(virt, PAGE_SIZE);
+    /* FIXME: 2024-02-17:
+     * Add HHDM to pdp, pd, pt AFTER allocation and just subtract it when adding
+     * into top level, this needs to be done for accessing things AFTER switching
+     * to new kernel pagedir (mine). Example of a correct but messy way is for the PDP,
+     * it works, others do not, so modify it.
+    */
 
-    if (phys == 0xf5990) {
-        kprintf("===MAPPING 0x%llx to 0x%llx\n===", phys, virt);
+    // kprintf("===MAPPING 0x%llx to 0x%llx\n===", phys, virt);
+    if (virt == 0xFFFFFFFFF)
         kprintf("PML4 entry: 0x%llx\n", pml4->entries[PML4_IDX(virt)]);
-    }
     if (!(pml4->entries[PML4_IDX(virt)] & PTE_PRESENT)) {
+        kprintf("NOT PRESENT\n");
         pdp = pmm_alloc(1);
-        // kprintf("pdp phys: 0x%llx\n", pdp);
+        kprintf("ALLOC PDP: 0x%llx\n", pdp);
+        uint64_t pdp_virt = (uint64_t)pdp + bl_get_hhdm_offset();
+        kprintf("ALLOC PDP VIRT: 0x%llx\n", pdp_virt);
+        memset((void*)pdp_virt, 0, PAGE_SIZE);
+        kprintf("MEMSET PDP to 0\n");
 
         pml4->entries[PML4_IDX(virt)] = (uint64_t)pdp | PTE_PRESENT | PTE_WRITABLE;
 
         pdp = (struct page_table*)((uint64_t)pdp + bl_get_hhdm_offset());
         // kprintf("pdp virt: 0x%llx\n", pdp);
     } else {
-        pdp = (struct page_table*)PTE_GET_ADDR(pml4->entries[PML4_IDX(virt)]);
+        pdp = (struct page_table*)(PTE_GET_ADDR(pml4->entries[PML4_IDX(virt)]) + bl_get_hhdm_offset());
     }
 
     // kprintf("PDP entry: 0x%llx\n", pdp->entries[PDP_IDX(virt)]);
     if (!(pdp->entries[PDP_IDX(virt)] & PTE_PRESENT)) {
         pd = pmm_alloc(1);
+        memset(pd, 0, PAGE_SIZE);
         // kprintf("pd phys: 0x%llx\n", pd);
 
         pdp->entries[PDP_IDX(virt)] = (uint64_t)pd | PTE_PRESENT | PTE_WRITABLE;
 
         pd = (struct page_table*)((uint64_t)pd + bl_get_hhdm_offset());
     } else {
-        pd = (struct page_table*)PTE_GET_ADDR(pdp->entries[PDP_IDX(virt)]);
+        pd = (struct page_table*)(PTE_GET_ADDR(pdp->entries[PDP_IDX(virt)]) + bl_get_hhdm_offset());
     }
 
     // kprintf("PD entry: 0x%llx\n", pd->entries[PD_IDX(virt)]);
@@ -149,17 +196,18 @@ vmm_map_page(struct page_table* pml4, uint64_t phys, uint64_t virt)
 
         pt = (struct page_table*)((uint64_t)pt + bl_get_hhdm_offset());
     } else {
-        pt = (struct page_table*)PTE_GET_ADDR(pd->entries[PD_IDX(virt)]);
+        pt = (struct page_table*)(PTE_GET_ADDR(pd->entries[PD_IDX(virt)]) + bl_get_hhdm_offset());
     }
 
     // kprintf("PT entry: 0x%llx\n", pt->entries[PT_IDX(virt)]);
     // page_table_entry curr_entry = pt->entries[PT_IDX(virt)];
 
-    if (!(pt->entries[PT_IDX(virt)] & PTE_PRESENT)) {
-        pt->entries[PT_IDX(virt)] = phys | PTE_PRESENT | PTE_WRITABLE;
-    } else {
-        // kprintf("The above already EXISTS\n");
-    }
+    pt->entries[PT_IDX(virt)] = phys | PTE_PRESENT | PTE_WRITABLE;
+    // if (!(pt->entries[PT_IDX(virt)] & PTE_PRESENT)) {
+    //     pt->entries[PT_IDX(virt)] = phys | PTE_PRESENT | PTE_WRITABLE;
+    // } else {
+    //     // kprintf("The above already EXISTS\n");
+    // }
     // if (phys <= 0xf6000) {
     //     kprintf("===For Virt(0x%llx) -> Phys(0x%llx)===\n", virt, phys);
     //     kprintf("PML4[%lld]->PDP[%lld]->PD[%lld]->PT[%lld] = 0x%llx\n",
@@ -171,7 +219,6 @@ vmm_map_page(struct page_table* pml4, uint64_t phys, uint64_t virt)
     // }
     // kprintf("page phys: 0x%llx\n", curr_entry);
     // kprintf("PT[%lld] entry AFTER: 0x%llx\n", PT_IDX(virt), pt->entries[PT_IDX(virt)]);
-
     return 0;
 }
 

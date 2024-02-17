@@ -33,13 +33,17 @@ static uint64_t
 acpi_find_table(const char* name)
 {
     uint64_t num_entries = (SDT->header.length - sizeof(SDT->header)) / (4 * acpi_version);
+    kprintf("========num_entries: %d\n", num_entries);
+    kprintf("========SDT ADDR: 0x%llx\n", SDT);
+    kprintf("========SDT->entries ADDR: 0x%llx\n", SDT->entries);
 
     for (uint64_t i = 0; i < num_entries; i++) {
         kprintf("========entry: 0x%llx\n", SDT->entries[i * acpi_version]);
-        // struct acpi_sdt_header* header = (struct acpi_sdt_header*)((SDT->entries)[i * acpi_version] + bl_get_hhdm_offset);
-        // if (!strncmp(header->signature, name, 4)) {
-        //     return (uint64_t)header;
-        // }
+        struct acpi_sdt_header* header = (struct acpi_sdt_header*)((SDT->entries)[i * acpi_version] + bl_get_hhdm_offset());
+        kprintf("SIG: %s\n", header->signature);
+        if (!strncmp(header->signature, name, 4)) {
+            return (uint64_t)header;
+        }
     }
 }
 
@@ -48,19 +52,16 @@ parse_acpi_tables(void)
 {
     uint64_t hhdm_offset = bl_get_hhdm_offset();
 
-    uint64_t rsdp_phys = bl_get_rsdp_addr();
-    uint64_t rsdp_virt = rsdp_phys + hhdm_offset;
+    uint64_t rsdp_addr = bl_get_rsdp_addr();
 
-    kprintf("RSDP PHYS: 0x%x\tRSDP VIRT: 0x%llx\n", rsdp_phys, rsdp_virt);
+    // kprintf("RET: %d\n", dump_pte(ALIGN_DOWN(rsdp_addr, 0x1000)));
 
-    // vmm_map_page(kernel_pml4, rsdp_phys, rsdp_virt);
-
-    RSDP = (struct acpi_rsdp*)(rsdp_phys);
+    RSDP = (struct acpi_rsdp*)(rsdp_addr);
 
     /* Determine if ACPI version 1 or 2 for the len (RSDP vs XSDP) */
     size_t len = (ACPI_SIZE_RSDP + (RSDP->revision / 2) * (ACPI_SIZE_XSDP));
 
-    uint8_t res = validate_acpi_checksum((rsdp_phys), len);
+    uint8_t res = validate_acpi_checksum((rsdp_addr), len);
     kprintf("CHECKSUM: %d\n", res);
     if (!res) {
         kprintf("INVALID RSDP TABLE\n");
@@ -76,6 +77,12 @@ parse_acpi_tables(void)
     }
 
     kprintf("ACPI Version: %d\n", acpi_version);
-    // kprintf("RSDT ADDR: 0x%llx\n", RSDP->RSDT_address);
-    // acpi_find_table("APIC");
+    kprintf("RSDT ADDR: 0x%llx\n", RSDP->RSDT_address);
+    kprintf("XSDT ADDR: 0x%llx\n", RSDP->XSDT_address);
+
+    /* MADT */
+    acpi_find_table("APIC");
+
+    kprintf("Mapping NEW PAGE\n");
+    vmm_map_page(kernel_pml4, 0xFFFFFFFFF, 0xFFFFFFFFF);
 }
