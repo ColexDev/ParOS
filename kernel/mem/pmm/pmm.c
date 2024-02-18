@@ -20,7 +20,7 @@ static uint64_t reserved_pages = 0; /* Total reserved pages (kernel, ACPI, etc) 
 /* So when I start on vmm I need to think about stuff:
  * Paging is enabled and the HHDM exists.
  * So the virtual addresses for everything besides the kernel (I think)
- * are just the hhdm offset + phys addr
+ * are just the HHDM offset + phys addr
  * And then the kernel is just the starting phys address
  * mapped to 0xffffffff80000000.
  * So just set up my own HHDM of sorts and map the kernel to the same
@@ -120,7 +120,7 @@ pmm_free(void* start_addr, uint64_t num_frames)
  * bitmap_size_frames and total_page_frames both exist because there are memory
  * holes. bitmap_size_frames does NOT account for these holes, therefore the bitmap
  * has a bunch of spaces that will always be counted as non-free as the addresses are
- * not even used/accessable. total_page_frames represents the number of page frames 
+ * not even used/accessible. total_page_frames represents the number of page frames 
  * that actually exist. This includes reserved and all types that may not be usable,
  * but they actually exist. bitmap_size_frames should not be used besides determining
  * the size of the bitmap. total_page_frames should always be used when determining 
