@@ -20,10 +20,17 @@ add_include_dirs() {
   INCLUDE_DIRS+=" -I$include_dir"
 }
 
+# Gather all include directories
+for file in $(find kernel/ -type f \( -name '*.c' -o -name '*.asm' \))
+do
+  dir=$(dirname "$file")
+  add_include_dirs "$dir"
+done
+
 # Build all C files
 for c_file in $(find kernel/ -name '*.c')
 do
-  add_include_dirs "$c_file"
+  # add_include_dirs "$c_file"
   filename_no_dir=$(basename -- "$c_file")
   filename_no_extension="${filename_no_dir%.*}"
   object_file="temp/${filename_no_extension}.c.o"
@@ -35,7 +42,7 @@ done
 # Build all Assembly files
 for asm_file in $(find kernel/ -name '*.asm')
 do
-  add_include_dirs "$asm_file"
+  # add_include_dirs "$asm_file"
   filename_no_dir=$(basename -- "$asm_file")
   filename_no_extension="${filename_no_dir%.*}"
   object_file="temp/${filename_no_extension}.s.o"

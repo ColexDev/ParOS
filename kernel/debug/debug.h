@@ -10,6 +10,6 @@ struct stack_frame
 };
 
 void print_registers(void);
-void printf_stack_trace(void);
+void print_stack_trace(void);
 
 #endif /* DEBUG_H */

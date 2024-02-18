@@ -3,6 +3,7 @@
 
 #include "interrupts.h"
 #include "../../io/printf.h"
+#include<debug/debug.h>
 
 void (*interrupt_handlers[256])(struct interrupt_frame* frame);
 
@@ -59,5 +60,8 @@ interrupt_handler(struct interrupt_frame* frame)
     } else {
         kprintf("======Unhandled Exception: %d======\n", frame->interrupt_number);
         dump_interrupt_frame(frame);
+        for (;;) {
+            asm("nop");
+        }
     }
 }
