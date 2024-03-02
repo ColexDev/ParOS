@@ -16,6 +16,7 @@
 #include <mem/memmap/memmap.h>
 #include <bl/bl.h>
 #include <acpi/acpi.h>
+#include <cpu/interrupts/apic/apic.h>
 
 // Halt and catch fire function. (from limine)
 static void
@@ -45,7 +46,8 @@ _start(void)
             bl_get_kernel_virt_addr(), bl_get_kernel_phys_addr());
     kprintf("Top of stack PHYS: 0x%llx\n", top_of_stack - offset);
 
-    parse_acpi_tables();
+    acpi_parse_tables();
+    apic_init();
 
     // We're done, just hang...
     hcf();

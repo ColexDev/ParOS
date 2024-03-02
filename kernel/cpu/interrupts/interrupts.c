@@ -39,7 +39,7 @@ dump_interrupt_frame(const struct interrupt_frame* frame)
 }
 
 void
-register_interrupt_handler(uint8_t vector, void (*isr)(struct interrupt_frame* frame))
+register_interrupt_handler(const uint8_t vector, void (*isr)(struct interrupt_frame* frame))
 {
     interrupt_handlers[vector] = isr;
 }

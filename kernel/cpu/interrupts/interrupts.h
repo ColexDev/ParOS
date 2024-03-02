@@ -12,6 +12,6 @@ struct interrupt_frame
    uint64_t rip, cs, rflags, rsp, ss; /* Pushed by CPU */
 };
 
-void register_interrupt_handler(uint8_t vector, void (*isr)(struct interrupt_frame* frame));
+void register_interrupt_handler(const uint8_t vector, void (*isr)(struct interrupt_frame* frame));
 
 #endif /* INTERRUPTS_H */

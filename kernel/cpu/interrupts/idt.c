@@ -7,7 +7,7 @@ static struct idtr idt_reg;
 static struct idt_entry idt[256];
 
 static void
-idt_register_entry(uint8_t vector, void* handler, uint8_t flags)
+idt_register_entry(const uint8_t vector, const void* handler, const uint8_t flags)
 {
     idt[vector] = (struct idt_entry){
         .offset_low  = (uint64_t)handler & 0xFFFF,

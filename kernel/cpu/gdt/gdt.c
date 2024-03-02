@@ -4,8 +4,8 @@
 
 #define GDT_ENTRIES 5
 
-struct gdtr gdtr;
-uint64_t gdt[GDT_ENTRIES];
+static struct gdtr gdtr;
+static uint64_t gdt[GDT_ENTRIES];
 
 extern void gdt_load(struct gdtr* gdtr);
 

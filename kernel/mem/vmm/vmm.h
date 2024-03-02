@@ -30,8 +30,8 @@ struct page_table
     uint64_t entries[512];
 } __attribute__((packed));
 
-uint64_t vmm_map_page(struct page_table* pml4, uint64_t phys, uint64_t virt);
+uint64_t vmm_map_page(struct page_table* pml4, const uint64_t phys, const uintptr_t virt);
 void vmm_init();
-uint8_t dump_pte(uint64_t virt);
+uint8_t dump_pte(const uint64_t virt);
 
 #endif /* VMM_H */

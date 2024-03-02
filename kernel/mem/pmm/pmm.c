@@ -39,7 +39,7 @@ pmm_get_free_pages(void)
 }
 
 static void
-pmm_set_frame(uint64_t frame)
+pmm_set_frame(const uint64_t frame)
 {
     taken_pages++;
     free_pages--;
@@ -47,7 +47,7 @@ pmm_set_frame(uint64_t frame)
 }
 
 static void
-pmm_clear_frame(uint64_t frame)
+pmm_clear_frame(const uint64_t frame)
 {
     taken_pages--;
     free_pages++;
@@ -55,17 +55,17 @@ pmm_clear_frame(uint64_t frame)
 }
 
 static uint8_t
-pmm_test_frame(uint64_t frame)
+pmm_test_frame(const uint64_t frame)
 {
     return (bitmap[WORD_OFFSET(frame)] & (1 << BIT_OFFSET(frame))) != 0;
 }
 
 /* Return starting frame of the set */
 static uint64_t
-pmm_find_free_frames(uint64_t num_frames)
+pmm_find_free_frames(const uint64_t num_frames)
 {
-    uint32_t start_frame = 0;
-    uint32_t free_frames = 0;
+    uint64_t start_frame = 0;
+    uint64_t free_frames = 0;
 
     /* Goes through each individual bit */
     for (uint64_t i = 0; i < bitmap_size * WORD_LENGTH; i++) {
@@ -85,14 +85,12 @@ pmm_find_free_frames(uint64_t num_frames)
         }
     }
 
-    kprintf("start_frame: %lld\n", start_frame);
-    kprintf("free_frames: %lld\n", free_frames);
     return 0;
 }
 
 /* Return address of start */
 void*
-pmm_alloc(uint64_t num_frames)
+pmm_alloc(const uint64_t num_frames)
 {
     uint64_t start_frame;
     start_frame = pmm_find_free_frames(num_frames);
@@ -106,7 +104,7 @@ pmm_alloc(uint64_t num_frames)
 }
 
 void
-pmm_free(void* start_addr, uint64_t num_frames)
+pmm_free(const void* start_addr, const uint64_t num_frames)
 {
     uint64_t start_frame = (uint64_t)start_addr / PAGE_SIZE;
 

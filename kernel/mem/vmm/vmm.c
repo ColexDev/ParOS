@@ -11,7 +11,7 @@
 struct page_table* kernel_pml4;
 
 void
-load_pml4(struct page_table* pml4)
+load_pml4(const struct page_table* pml4)
 {
     struct page_table* pml4_phys = (struct page_table*)((uint64_t)pml4 - bl_get_hhdm_offset());
     kprintf("pml4 phys: 0x%llx\n", pml4_phys);
@@ -24,7 +24,6 @@ page_fault_handler(struct interrupt_frame* frame)
 {
     uint64_t faulting_address;
     uint64_t err_code = frame->error_code;
-    kprintf("===OH GOD NO, PAGE FAULT===\n");
     asm volatile ("mov %%cr2, %0" : "=r" (faulting_address));
     kprintf("Error code: %d\n", err_code);
     /* Protection error */
@@ -61,7 +60,7 @@ page_fault_handler(struct interrupt_frame* frame)
 }
 
 uint8_t
-dump_pte(uint64_t virt)
+dump_pte(const uint64_t virt)
 {
     struct page_table* pml4 = kernel_pml4;
     struct page_table* pdp;
@@ -138,7 +137,7 @@ vmm_init()
  * add the HHDM in the else statements as well, not sure why I did it when creating them
  * and not in the else */
 uint64_t
-vmm_map_page(struct page_table* pml4, uint64_t phys, uint64_t virt)
+vmm_map_page(struct page_table* pml4, const uint64_t phys, const uintptr_t virt)
 {
     /* add ability to pass in flags, used for USER flag probably */
     

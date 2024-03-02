@@ -10,7 +10,7 @@ static volatile struct limine_memmap_request memmap_request = {
     .revision = 0
 };
 
-static char* memmap_types[] = {
+static const char* memmap_types[] = {
     "USABLE",
     "RESERVED",
     "ACPI_RECLAIMABLE",

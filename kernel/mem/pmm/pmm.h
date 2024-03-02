@@ -10,8 +10,8 @@
 #define BIT_OFFSET(b)  ((b) % WORD_LENGTH)
 
 void pmm_init(void);
-void* pmm_alloc(uint64_t num_frames);
-void pmm_free(void* addr, uint64_t num_frames);
+void* pmm_alloc(const uint64_t num_frames);
+void pmm_free(const void* addr, const uint64_t num_frames);
 uint64_t pmm_get_used_pages(void);
 uint64_t pmm_get_free_pages(void);
 
