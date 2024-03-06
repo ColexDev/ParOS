@@ -41,14 +41,14 @@ static uint64_t
 acpi_find_table(const char* name)
 {
     uint64_t num_entries = (XRSDT->header.length - sizeof(XRSDT->header)) / (4 * acpi_version);
-    kprintf("========num_entries: %d\n", num_entries);
-    kprintf("========SDT ADDR: 0x%llx\n", XRSDT);
-    kprintf("========SDT->entries ADDR: 0x%llx\n", XRSDT->entries);
+    // kprintf("========num_entries: %d\n", num_entries);
+    // kprintf("========SDT ADDR: 0x%llx\n", XRSDT);
+    // kprintf("========SDT->entries ADDR: 0x%llx\n", XRSDT->entries);
 
     for (size_t i = 0; i < num_entries; i++) {
-        kprintf("========entry: 0x%llx\n", XRSDT->entries[i * acpi_version]);
+        // kprintf("========entry: 0x%llx\n", XRSDT->entries[i * acpi_version]);
         struct acpi_sdt_header* header = (struct acpi_sdt_header*)((XRSDT->entries)[i * acpi_version] + bl_get_hhdm_offset());
-        kprintf("SIG: %s\n", header->signature);
+        // kprintf("SIG: %s\n", header->signature);
         if (!strncmp(header->signature, name, 4)) {
             return (uintptr_t)header;
         }
@@ -70,7 +70,6 @@ acpi_parse_tables(void)
     size_t len = (ACPI_SIZE_RSDP + (RSDP->revision / 2) * (ACPI_SIZE_XSDP));
 
     uint8_t res = acpi_validate_checksum((rsdp_addr), len);
-    kprintf("RSDP CHECKSUM: %d\n", res);
     if (!res) {
         kprintf("INVALID RSDP TABLE\n");
     }
@@ -87,7 +86,6 @@ acpi_parse_tables(void)
     }
 
     res = acpi_validate_checksum((uintptr_t)XRSDT, XRSDT->header.length);
-    kprintf("XRSDT CHECKSUM: %d\n", res);
 
     kprintf("ACPI Version: %d\n", acpi_version);
     kprintf("RSDT ADDR: 0x%llx\n", RSDP->RSDT_address);
@@ -96,7 +94,9 @@ acpi_parse_tables(void)
     /* Get APIC information table */
     MADT = (struct acpi_madt*)acpi_find_table("APIC");
     res = acpi_validate_checksum((uintptr_t)MADT, MADT->header.length);
-    kprintf("MADT CHECKSUM: %d\n", res);
+    if (!res) {
+        kprintf("INVALID MADT TABLE\n");
+    }
     kprintf("LAPIC ADDR: 0x%x\n", MADT->lapic_addr);
     kprintf("%s\n", MADT->flags ? "Legacy PICs, we need to mask all the interrupts" : "No Legacy PICs");
 }

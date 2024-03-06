@@ -14,7 +14,6 @@ void
 load_pml4(const struct page_table* pml4)
 {
     struct page_table* pml4_phys = (struct page_table*)((uint64_t)pml4 - bl_get_hhdm_offset());
-    kprintf("pml4 phys: 0x%llx\n", pml4_phys);
 
     asm volatile("mov %0, %%cr3" : : "r" (pml4_phys));
 }
@@ -111,8 +110,8 @@ vmm_init()
         entry = memmap_get_entry(i);
 
         if (entry.type == MEMMAP_KERNEL_AND_MODULES) {
-            kprintf("===MAPPING KERNEL phys 0x%llx at virt 0x%llx===\n", 
-                    bl_get_kernel_phys_addr(), bl_get_kernel_virt_addr());
+            // kprintf("===MAPPING KERNEL phys 0x%llx at virt 0x%llx===\n", 
+                    // bl_get_kernel_phys_addr(), bl_get_kernel_virt_addr());
             for(uint64_t i = 0; i <= ALIGN_UP(entry.length, PAGE_SIZE); i += PAGE_SIZE){
                 vmm_map_page(kernel_pml4, i + bl_get_kernel_phys_addr(), i + bl_get_kernel_virt_addr());
             }
@@ -120,7 +119,7 @@ vmm_init()
     }
 
     // map first 4 GiB
-    kprintf("===MAPPING FIRST 4GB===\n");
+    // kprintf("===MAPPING FIRST 4GB===\n");
     for(uint64_t i = 0x1000; i <= 0xffffffff; i += PAGE_SIZE){
         // vmm_map_page(kernel_pml4, i, i);
         vmm_map_page(kernel_pml4, i, i + bl_get_hhdm_offset());
@@ -153,16 +152,14 @@ vmm_map_page(struct page_table* pml4, const uint64_t phys, const uintptr_t virt)
     */
 
     // kprintf("===MAPPING 0x%llx to 0x%llx\n===", phys, virt);
-    if (virt == 0xFFFFFFFFF)
-        kprintf("PML4 entry: 0x%llx\n", pml4->entries[PML4_IDX(virt)]);
     if (!(pml4->entries[PML4_IDX(virt)] & PTE_PRESENT)) {
-        kprintf("NOT PRESENT\n");
+        // kprintf("NOT PRESENT\n");
         pdp = pmm_alloc(1);
-        kprintf("ALLOC PDP: 0x%llx\n", pdp);
+        // kprintf("ALLOC PDP: 0x%llx\n", pdp);
         uint64_t pdp_virt = (uint64_t)pdp + bl_get_hhdm_offset();
-        kprintf("ALLOC PDP VIRT: 0x%llx\n", pdp_virt);
+        // kprintf("ALLOC PDP VIRT: 0x%llx\n", pdp_virt);
         memset((void*)pdp_virt, 0, PAGE_SIZE);
-        kprintf("MEMSET PDP to 0\n");
+        // kprintf("MEMSET PDP to 0\n");
 
         pml4->entries[PML4_IDX(virt)] = (uint64_t)pdp | PTE_PRESENT | PTE_WRITABLE;
 

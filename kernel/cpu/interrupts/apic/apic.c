@@ -6,6 +6,8 @@
 #include <bl/bl.h>
 #include <mem/vmm/vmm.h>
 
+#include "apic.h"
+
 static uintptr_t ioapic_addr;
 
 /*
@@ -48,19 +50,39 @@ apic_init(void)
     kprintf("First record type: %d\n", curr_record->entry_type);
     kprintf("First record length: %d\n", curr_record->record_length);
 
-    /* This probably goes over a bit, header.length is too long */
-    for (size_t i = 0; i < MADT->header.length; i += curr_record->record_length) {
+    /* FIXME: This probably goes over a bit, header.length is too long,
+     * not sure if it even matters since I am breaking out upon an invalid
+     * entry anyways*/
+    for (size_t i = 0; i <= MADT->header.length; i += curr_record->record_length) {
         curr_record += curr_record->record_length;
-
-        if (curr_record->entry_type != ACPI_MADT_IOAPIC) {
-            continue;
+        
+        if (curr_record->entry_type > NUM_ACPI_MADT_TYPES) {
+            break;
         }
 
-        struct acpi_madt_ioapic_record* curr_ioapic = (struct acpi_madt_ioapic_record*)curr_record;
-        kprintf("ID: %d\n", curr_ioapic->ioapic_id);
-        kprintf("Address: 0x%x\n", curr_ioapic->address);
-        kprintf("GSI: %d\n", curr_ioapic->global_system_interrupt_base);
-        ioapic_addr = curr_ioapic->address + bl_get_hhdm_offset();
-        vmm_map_page(kernel_pml4, curr_ioapic->address, ioapic_addr);
+        /* Grab all the IOAPICs */
+        if (curr_record->entry_type == ACPI_MADT_IOAPIC) {
+            struct acpi_madt_ioapic_record* curr_ioapic = (struct acpi_madt_ioapic_record*)curr_record;
+
+            kprintf("===FOUND AN IOAPIC===\n");
+            kprintf("ID: %d\n", curr_ioapic->ioapic_id);
+            kprintf("Address: 0x%x\n", curr_ioapic->address);
+            kprintf("GSI: %d\n", curr_ioapic->global_system_interrupt_base);
+
+            ioapic_addr = curr_ioapic->address + bl_get_hhdm_offset();
+            vmm_map_page(kernel_pml4, curr_ioapic->address, ioapic_addr);
+
+            uint32_t ioapicver = apic_read_register(ioapic_addr, IOAPICVER);
+            kprintf("I/O APIC Version: %d\n", ioapicver & 0xFF);
+            kprintf("I/O APIC max redirection: %d\n", (ioapicver >> 16) & 0xFF);
+        }
     }
+
+    /* FIXME: Right now these are just all 0 except bit 16
+     * which means that they are masked (I don't know why everything
+     * else is 0, even the vector is 0 for other entries too, this
+     * may be incorrect behavior, I need to check)*/
+
+    // uint32_t vec0 = apic_read_register(ioapic_addr, IOREDTBL(0));
+    // kprintf("Vector: %d\n", vec0);
 }

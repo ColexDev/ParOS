@@ -3,8 +3,6 @@
 
 #include <stdint.h>
 
-extern struct page_table* kernel_pml4;
-
 #define PML4_IDX(virt) (((virt) >> 39) & 0x1ff)
 #define PDP_IDX(virt)  (((virt) >> 30) & 0x1ff)
 #define PD_IDX(virt)   (((virt) >> 21) & 0x1ff)
@@ -29,6 +27,8 @@ struct page_table
 {
     uint64_t entries[512];
 } __attribute__((packed));
+
+extern struct page_table* kernel_pml4;
 
 uint64_t vmm_map_page(struct page_table* pml4, const uint64_t phys, const uintptr_t virt);
 void vmm_init();

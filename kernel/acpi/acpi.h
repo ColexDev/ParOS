@@ -44,9 +44,12 @@ struct acpi_sdt
 } __attribute__ ((packed));
 
 /* https://wiki.osdev.org/MADT */
-#define ACPI_MADT_LAPIC  (0)
-#define ACPI_MADT_IOAPIC (1)
-#define ACPI_MADT_IOAPIC_INTERRUPT_SOURCE_OVERRIDE (2)
+enum ACPI_MADT_TYPES {
+    ACPI_MADT_LAPIC = 0,
+    ACPI_MADT_IOAPIC,
+    ACPI_MADT_IOAPIC_INTERRUPT_SOURCE_OVERRIDE,
+    NUM_ACPI_MADT_TYPES
+};
 
 struct acpi_madt_record_header
 {
